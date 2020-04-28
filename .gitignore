@@ -20,6 +20,7 @@ data/
 # R data files #
 *.[rR][dD][aA][tT][aA]
 *.[rR][dD][sS]
+*.[rR][dD][sS].[gG][zZ]
 
 # MacOS folder attributes files #
 .DS_Store

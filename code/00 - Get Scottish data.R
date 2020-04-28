@@ -28,7 +28,8 @@ extract <- NA
 while (tries == 0 | (tries < 5 & inherits(extract, "try-error"))) {
 
   # Avoid using the API on the hour as this is when a lot of reports refresh
-  while (between(minute(Sys.time()), 59, 05)) {
+  while (minute(Sys.time()) %in% c(59, 0:5)) {
+    message("Waiting till after the hour to avoid overloading the API")
     Sys.sleep(30)
   }
 

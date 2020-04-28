@@ -24,4 +24,5 @@ data/
 # MacOS folder attributes files #
 .DS_Store
 
-!lookups/lookups/scot_locations.rds.gz
+!lookups/scot_locations.csv
+!lookups/scottish_data_access_groups.csv

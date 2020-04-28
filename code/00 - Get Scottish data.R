@@ -59,7 +59,7 @@ if (class(extract) == "character") {
 
 ## Add on Location details for Scottish hospitals where we can
 # Lookup created by create_scottish_lookups.R
-scot_locations <- read_rds("lookups/scot_locations.rds.gz")
+scot_locations <- read_csv("lookups/scot_locations.csv")
 
 extract <- extract %>%
   mutate(hospid = str_sub(subjid, end = 5)) %>%
@@ -69,7 +69,7 @@ extract <- extract %>%
 scot_groups <- extract %>%
   filter(!is.na(Locname)) %>%
   distinct(redcap_data_access_group) %>%
-  ##write_rds("scottish_data_access_groups.rds")
+  write_csv("lookups/scottish_data_access_groups.csv")
 
 # Filter to Scottish data
 scot_data <- extract %>%
@@ -87,6 +87,5 @@ data <- scot_data
 source("CCPUKSARI_R_2020-03-04_1532.R")
 scot_data <- data
 
-# Save
-##write_rds(scot_data, "scottish_data.rds.gz", compress = "gz")
+# Clean up
 rm(extract, data, tries)

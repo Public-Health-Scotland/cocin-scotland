@@ -12,4 +12,4 @@ hb_postcodes <- read_rds("//stats/cl-out/lookups/Unicode/Geography/Scottish Post
 
 scot_locations <- left_join(scot_locations, hb_postcodes, by = c("Postcode" = "pc8"))
 
-write_rds(scot_locations, "lookups/scot_locations.rds.gz", compress = "gz")
+write_csv(scot_locations, "lookups/scot_locations.csv")

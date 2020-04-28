@@ -33,6 +33,12 @@ extract <- NA
 
 ## Note - need to come off the VPN connection for the below 
 while (tries == 0 | (tries < 5 & inherits(extract, "try-error"))) {
+
+  # Avoid using the API on the hour as this is when a lot of reports refresh
+  while (between(minute(Sys.time()), 59, 05)) {
+    Sys.sleep(30)
+  }
+
   extract <- try(postForm(
     uri = "https://ncov.medsci.ox.ac.uk/api/",
     token = Sys.getenv("ccp_token"),

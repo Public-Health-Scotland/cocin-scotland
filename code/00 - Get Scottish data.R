@@ -10,15 +10,8 @@ library(RCurl)
 library(tidyverse)
 library(lubridate)
 library(finalfit)
-library(here)
 library(tidylog)
 library(Hmisc)
-
-## Must be on VPN for this bit (could possibly use Open data to reduce reliance on network files)
-## Need to pull in location codes
-## Removed this section of code 
-
-## Add on Location details for Scottish hospitals where we can
 
 ## API pull
 
@@ -63,10 +56,13 @@ if (class(extract) == "character") {
   message("Something went wrong with the extract")
 }
 
+## Add on Location details for Scottish hospitals where we can
+# Lookup created by create_scottish_lookups.R
+scot_locations <- read_rds("lookups/scot_locations.rds.gz")
+
 extract <- extract %>%
   mutate(hospid = str_sub(subjid, end = 5)) %>%
-  left_join(scot_locations, by = c("hospid" = "Location")) %>%
-  left_join(hb_postcodes, by = c("Postcode" = "pc8"))
+  left_join(scot_locations, by = c("hospid" = "Location"))
 
 ## Work out what the Scottish data access groups are
 scot_groups <- extract %>%

@@ -127,25 +127,7 @@ admission_data <- topline %>%
   ##file = "initial stats - 27-04-2020.xlsx"
 )
 
-# Plots
-library(ggplot2)
 
-## Breakdown of geder, age and death 
-pop_data <- scot_data %>% 
-  filter(!is.na(age.factor), !is.na(sex)) %>% 
-  group_by(subjid) %>% 
-  mutate(died = if_else(subjid %in% died, 1, 0)) %>% 
-  summarise(age = first(age.factor),
-            sex = first(sex),
-            died = max(died)) %>% 
-  mutate(died = as_factor(died))
-
-# Population pyramid
-ggplot(pop_data, aes(x = age, colour = sex, alpha = died)) +
-  geom_bar(data = filter(pop_data, sex == "Female")) +
-  geom_bar(data = filter(pop_data, sex == "Male"), aes(y = ..count..*(-1))) +
-  coord_flip() +
-  theme_minimal()
 
 
 

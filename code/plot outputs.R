@@ -1,6 +1,21 @@
 # Plots
 library(ggplot2)
 
+scot_data <- scot_data %>%
+  mutate(
+    age.factor = case_when(
+      age < 17 ~ "<17",
+      age < 30 ~ "17-29",
+      age < 40 ~ "30-39",
+      age < 50 ~ "40-49",
+      age < 60 ~ "50-59",
+      age < 70 ~ "60-69",
+      age < 80 ~ "70-79",
+      is.na(age) ~ NA_character_,
+      TRUE ~ "80+"
+    )
+  )
+
 ## Breakdown of gender, age and death 
 pop_data <- scot_data %>% 
   group_by(subjid) %>% 

@@ -54,7 +54,7 @@ while (tries == 0 | (tries < 5 & inherits(extract, "try-error"))) {
 if (class(extract) == "character") {
   extract <- read_csv(extract, na = "", guess_max = 20000)
 } else {
-  message("Something went wrong with the extract")
+  warning("Something went wrong with the extract")
 }
 
 ## Add on Location details for Scottish hospitals where we can

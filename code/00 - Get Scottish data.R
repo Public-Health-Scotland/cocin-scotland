@@ -66,7 +66,7 @@ extract <- extract %>%
 scot_groups <- extract %>%
   filter(!is.na(Locname)) %>%
   distinct(redcap_data_access_group) %>%
-  write_rds("scottish_data_access_groups.rds")
+  ##write_rds("scottish_data_access_groups.rds")
 
 # Filter to Scottish data
 scot_data <- extract %>%

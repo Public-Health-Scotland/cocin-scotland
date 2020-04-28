@@ -37,6 +37,7 @@ ggplot(pop_data, aes(x = age, fill = sex, alpha = died)) +
   scale_alpha_ordinal("Died", range = c(0.3, 1)) +
   coord_flip() +
   theme_minimal() +
+  ylim(-100, 100) +
   xlab("Age") +
   ylab("Count of subjects") +
   ggtitle("Population pyramid of ISARIC subjects from Scottish hospitals",
@@ -44,3 +45,5 @@ ggplot(pop_data, aes(x = age, fill = sex, alpha = died)) +
       n_travelled = length(travelled)
     )
   )
+
+

@@ -156,17 +156,19 @@ admission_data <- topline %>%
             sex = first(sex))
 
 
-##write.xlsx(
-  ##x = list("Scotland Summary" = scot_data,
-    ##   "Health Boards" = hb_summary,
-      ## "Health Boards ex travelled" = hb_summary_ex_travelled, "Age Summary ex travelled" = age_summary_ex_travelled,
-       ##"Ethnicity Summary ex travelled" = ethnicity_ex_travelled),
-  ##file = "initial stats - 27-04-2020.xlsx"
-)
 
 
 
 
+# write.xlsx(
+#   x = list(
+#     "Scotland Summary" = scot_data,
+#     "Health Boards" = hb_summary,
+#     "Health Boards ex travelled" = hb_summary_ex_travelled, "Age Summary ex travelled" = age_summary_ex_travelled,
+#     "Ethnicity Summary ex travelled" = ethnicity_ex_travelled
+#   ),
+#   file = "initial stats - 27-04-2020.xlsx"
+# )
 
 
 # HB summary table --------------------------------------------------------

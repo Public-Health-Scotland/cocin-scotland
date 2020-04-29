@@ -10,6 +10,8 @@ library(ggplot2)
 library(openxlsx)
 library(gt)
 library(ggplot2)
+library(lubridate)
+
 
 # Fixes -------------------------------------------------------------------
 # Change the age groupings
@@ -124,54 +126,41 @@ hb_summary_ex_travelled <- scot_data %>%
     deaths = sum(subjid %in% died)
   )
 
-## Addition of age summary and ethnicity using top line data
-
 ## Age Summary
 
-age_summary_ex_travelled <- topline %>%
-  group_by(age.factor) %>%
-  filter(!subjid %in% travelled) %>%
-  ## distinct(subjid, .keep_all = T) %>%
-  summarise(
-    total_cases = n(),
-    confirmed_cases = sum(subjid %in% corna_confirmed),
-    suspected_cases = sum(subjid %in% corna_suspected),
-    unknown_cases = sum(subjid %in% corna_unknown),
-    deaths = sum(subjid %in% died)
-  )
+age_summary <- pop_data %>% 
+  group_by(age) %>% 
+  summarise(total_cases = n()) %>%
+  mutate(percent= paste(round(total_cases/sum(total_cases)*100,1),"%"))
 
-## Ethnicity
 
-ethnicity_ex_travelled <- topline %>%
+## Ethnicity analysis 
+
+ethnicity <- pop_data %>%
   group_by(ethnicity) %>%
-  filter(!subjid %in% travelled) %>%
-  ## distinct(subjid, .keep_all = T) %>%
-  summarise(
-    total_cases = n(),
-    confirmed_cases = sum(subjid %in% corna_confirmed),
-    suspected_cases = sum(subjid %in% corna_suspected),
-    unknown_cases = sum(subjid %in% corna_unknown),
-    deaths = sum(subjid %in% died)
-  )
+  filter(!subjid %in% travelled)  %>% 
+  summarise(total_cases = n()) %>%
+  mutate(percent= paste(round(total_cases/sum(total_cases)*100,1),"%"))
 
-## Admission date analysis
-## Analysing by onset date of first/earliest symptom
-## Week 1 - 23/03/2020
+## Admission date analysis 
+## Analysing by onset date of first/earliest symptom 
+## Week 1 - 23/03/2020 
 
-admission_data <- topline %>%
-  filter(!is.na(cestdat) & year(cestdat) == 2020 & cestdat <= today()) %>%
-  mutate(
-    admissionweek =
-      if_else(cestdat < "2020-03-30", "Week 1", if_else(cestdat < "2020-04-06", "Week 2",
-        if_else(cestdat < "2020-04-13", "Week 3", if_else(cestdat < "2020-04-20", "Week 4", if_else(cestdat < "2020-04-27", "Week 5", "Error")))
-      ))
-  ) %>%
-  group_by(admissionweek, hospid) %>%
-  summarise(
-    total_cases = n(),
-    age = first(age.factor),
-    sex = first(sex)
-  )
+admission_data <- pop_data %>% 
+  filter(admission <= today())  %>% 
+  mutate(admissionweek = 
+           if_else(admission <"2020-03-30", "Week 1", if_else(admission < "2020-04-06", "Week 2",
+                                                              if_else(admission < "2020-04-13", "Week 3",  if_else(admission < "2020-04-20", "Week 4",if_else(admission < "2020-04-27", "Week 5", if_else(admission < "2020-05-04", "Week 6","NA" ))))))) %>% 
+  group_by(admissionweek) %>% 
+  summarise(total_cases = n()) %>%
+  mutate(percent= paste(round(total_cases/sum(total_cases)*100,1),"%"))
+
+## Pregnancy Analysis 
+
+pregnancy <- pop_data %>%
+  group_by(pregnancy) %>%
+  summarise(total_cases = n()) 
+
 
 
 # write.xlsx(

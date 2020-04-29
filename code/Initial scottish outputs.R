@@ -1,11 +1,15 @@
 ## Scottish Data Analysis
 
-library(openxlsx)
 # Run data extract or load in from stored extract
 # source("code/00 - Get Scottish data.R")
 # source("code/01 - Prep data.R")
 # scot_data <- read_rds("...")
 
+# Some extra packages
+library(ggplot2)
+library(openxlsx)
+library(gt)
+library(ggplot2)
 
 # Create lists of subjids who meet criteria
 corna_confirmed <- scot_data %>% 

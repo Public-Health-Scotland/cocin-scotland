@@ -1,7 +1,10 @@
-## Scottish Data Analysis 
+## Scottish Data Analysis
 
 library(openxlsx)
-##scot_data <- read_rds("scottish_data_prepped.rds.gz")
+# Run data extract or load in from stored extract
+# source("code/00 - Get Scottish data.R")
+# source("code/01 - Prep data.R")
+# scot_data <- read_rds("...")
 
 
 # Create lists of subjids who meet criteria

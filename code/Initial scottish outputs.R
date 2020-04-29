@@ -128,6 +128,18 @@ ethnicity_ex_travelled <- topline %>%
             suspected_cases = sum(subjid %in% corna_suspected),
             unknown_cases = sum(subjid %in% corna_unknown),
             deaths = sum(subjid %in% died))
+# Breakdown of gender, age and death
+# Used for population pyramid
+pop_data <- scot_data %>%
+  filter(!(subjid %in% travelled)) %>%
+  group_by(subjid) %>%
+  summarise(
+    age = first(na.omit(age.factor)),
+    sex = first(na.omit(sex)),
+    ethnicity = first(na.omit(ethnicity)),
+    outcome = first(na.omit(dsterm))
+  ) %>%
+  mutate(died = case_when(outcome == "Death" ~ "Yes", TRUE ~ "No") %>% factor(levels = c("No", "Yes")))
 
 ## Admission date analysis 
 ## Analysing by onset date of first/earliest symptom 

@@ -11,6 +11,24 @@ library(openxlsx)
 library(gt)
 library(ggplot2)
 
+# Fixes -------------------------------------------------------------------
+# Change the age groupings
+scot_data <- scot_data %>%
+  mutate(
+    age.factor = case_when(
+      age < 17 ~ "<17",
+      age < 30 ~ "17-29",
+      age < 40 ~ "30-39",
+      age < 50 ~ "40-49",
+      age < 60 ~ "50-59",
+      age < 70 ~ "60-69",
+      age < 80 ~ "70-79",
+      is.na(age) ~ NA_character_,
+      TRUE ~ "80+"
+    )
+  )
+
+
 # Create lists of subjids who meet criteria
 corna_confirmed <- scot_data %>% 
   filter(corna_mbcat == "YES - Confirmed") %>% 

@@ -71,15 +71,18 @@ female <- scot_data %>%
 
 # Breakdown of gender, age and death
 # Used for population pyramid
-pop_data <- scot_data %>%
-  filter(!(subjid %in% travelled)) %>%
-  group_by(subjid) %>%
-  summarise(
-    age = first(na.omit(age.factor)),
-    sex = first(na.omit(sex)),
-    ethnicity = first(na.omit(ethnicity)),
-    outcome = first(na.omit(dsterm))
-  ) %>%
+
+
+pop_data <- scot_data %>% 
+  group_by(subjid) %>% 
+  filter(!subjid %in% travelled) %>% 
+  mutate(died = if_else(subjid %in% died, 1, 0)) %>% 
+  summarise(age = first(na.omit(age.factor)),
+            sex = first(na.omit(sex)),
+            ethnicity = first(na.omit(ethnicity)),
+            pregnancy = first(na.omit(pregyn_rptestcd)),
+            admission = first(na.omit(cestdat)),
+            outcome = first(na.omit(dsterm))) %>%
   mutate(died = case_when(outcome == "Death" ~ "Yes", TRUE ~ "No") %>% factor(levels = c("No", "Yes")))
 
 

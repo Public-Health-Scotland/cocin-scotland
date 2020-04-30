@@ -139,7 +139,7 @@ age_summary <- pop_data %>%
 
 ## Ethnicity analysis 
 
-ethnicity <- pop_data %>%
+ethnicity_data <- pop_data %>%
   group_by(ethnicity) %>%
   filter(!subjid %in% travelled)  %>% 
   summarise(total_cases = n()) %>%
@@ -160,7 +160,7 @@ admission_data <- pop_data %>%
 
 ## Pregnancy Analysis 
 
-pregnancy <- pop_data %>%
+pregnancy_data <- pop_data %>%
   group_by(pregnancy) %>%
   summarise(total_cases = n()) 
 

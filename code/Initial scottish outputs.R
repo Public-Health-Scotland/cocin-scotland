@@ -149,14 +149,23 @@ ethnicity_data <- pop_data %>%
 ## Analysing by onset date of first/earliest symptom 
 ## Week 1 - 23/03/2020 
 
-admission_data <- pop_data %>% 
-  filter(admission <= today())  %>% 
-  mutate(admissionweek = 
-           if_else(admission <"2020-03-30", "Week 1", if_else(admission < "2020-04-06", "Week 2",
-                                                              if_else(admission < "2020-04-13", "Week 3",  if_else(admission < "2020-04-20", "Week 4",if_else(admission < "2020-04-27", "Week 5", if_else(admission < "2020-05-04", "Week 6","NA" ))))))) %>% 
-  group_by(admissionweek) %>% 
+admission_data <- pop_data %>%
+  filter(admission <= today()) %>%
+  mutate(
+    admissionweek =
+      case_when(
+        admission < "2020-03-30" ~ "Week 1",
+        admission < "2020-04-06" ~ "Week 2",
+        admission < "2020-04-13" ~ "Week 3",
+        admission < "2020-04-20" ~ "Week 4",
+        admission < "2020-04-27" ~ "Week 5",
+        admission < "2020-05-04" ~ "Week 6",
+        TRUE ~ "NA"
+      )
+  ) %>%
+  group_by(admissionweek) %>%
   summarise(total_cases = n()) %>%
-  mutate(percent= paste(round(total_cases/sum(total_cases)*100,1),"%"))
+  mutate(percent = paste(round(total_cases / sum(total_cases) * 100, 1), "%"))
 
 ## Pregnancy Analysis 
 

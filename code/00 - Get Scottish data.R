@@ -17,10 +17,6 @@ library(Hmisc)
 
 ## The API call fail randomly due to traffic
 ## Try 5 times then stop
-Sys.setenv(ccp_token = rstudioapi::showPrompt(
-  title = "Enter API token",
-  message = "API token:"
-))
 tries <- 0
 extract <- NA
 

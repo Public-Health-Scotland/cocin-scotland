@@ -18,4 +18,6 @@ data/
 *.[rR][dD][sS].[gG][zZ]
 # MacOS folder attributes files #
 .DS_Store
-HB_table.html
+# Ignore PDF and html output files
+*.pdf
+*.html

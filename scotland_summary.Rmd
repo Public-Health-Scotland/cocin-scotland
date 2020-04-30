@@ -1,0 +1,67 @@
+---
+title: "Scotland Summary statistics"
+author: "Alice Byres, Nicole Jarvie and James McMahon"
+date: "`r lubridate::stamp_date('Thursday, 30 April, 2020')(lubridate::today())`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE, echo=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+library(tidyverse)
+library(lubridate)
+library(finalfit)
+library(RCurl)
+library(tidylog)
+library(Hmisc)
+
+
+if (!exists("scot_data")) { # Use this with rmarkdown::render("scotland_summary.Rmd") for testing
+  source("code/00 - Get Scottish data.R")
+  source("code/01 - Prep data.R")
+}
+```
+*Data Extracted from CoCIN - (save date and time for extract to be used here)*
+
+As of the above extract time the database contains records for:
+
+* `r "XX"` patients in Scottish hospitals
+* `r "XX"` of those patients have died
+* Of these patients
+
+  + `r "XX"` are confirmed CoVID-19 cases
+  + `r "XX"` are suspected cases
+  + `r "XX"` are unknown cases
+* `r "XX"` patients are identified as being pregnant
+* `r "XX"` patients had travelled in the 14 days before admission and have been excluded from the analyses below
+
+## NHS Health Board summary
+
+```{r hb_table}
+
+```
+
+## Age Breakdown
+*Age is unknown for `r "X.X"`% of patients*
+```{r age_table}
+
+```
+
+## Population pyramid
+Patients who have died are highlighted
+```{r pop_pyramid}
+
+```
+
+## Ethnicity Breakdown
+*`r "X.X"`% of patients are of white ethnicity. Ethnicity is unknown for `r "X.X"`% of patients.* 
+```{r ethnicity_table}
+
+```
+
+## Onset Week
+This analysis using onset date of first/earliest symptom (some patients were in hospital before the start of the pandemic). Week 1 has been selected as the earliest week in which a patient showed symptoms – `r "DATE"`, week `r "n"` is the current week.
+
+```{r onset_week_table}
+
+```

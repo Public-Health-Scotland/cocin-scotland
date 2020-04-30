@@ -15,12 +15,19 @@ library(Hmisc)
 
 ## API pull
 
+# Get the API token for the CO-CIN database
+if (Sys.getenv("ccp_token") == "") {
+  Sys.setenv(ccp_token = rstudioapi::showPrompt(
+    title = "Enter API token",
+    message = "API token:"
+  ))
+} else {
+  message("Using stored token - If the token is incorrect run Sys.setenv(ccp_token = \"<TOKEN>\")")
+}
+
+
 ## The API call fail randomly due to traffic
 ## Try 5 times then stop
-Sys.setenv(ccp_token = rstudioapi::showPrompt(
-  title = "Enter API token",
-  message = "API token:"
-))
 tries <- 0
 extract <- NA
 

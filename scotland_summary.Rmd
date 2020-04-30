@@ -2,7 +2,7 @@
 title: "Scotland Summary statistics"
 author: "Alice Byres, Nicole Jarvie and James McMahon"
 date: "`r lubridate::stamp_date('Thursday, 30 April, 2020')(lubridate::today())`"
-output: pdf_document
+output: html_document
 ---
 
 ```{r setup, include=FALSE, echo=FALSE}
@@ -12,8 +12,11 @@ library(tidyverse)
 library(lubridate)
 library(finalfit)
 library(RCurl)
-library(tidylog)
 library(Hmisc)
+library(ggplot2)
+library(openxlsx)
+library(gt)
+library(ggplot2)
 
 
 if (!exists("scot_data")) { # Use this with rmarkdown::render("scotland_summary.Rmd") for testing
@@ -21,47 +24,227 @@ if (!exists("scot_data")) { # Use this with rmarkdown::render("scotland_summary.
   source("code/01 - Prep data.R")
 }
 ```
+
+```{r data_prep}
+# Fixes -------------------------------------------------------------------
+# Change the age groupings
+scot_data <- scot_data %>%
+  mutate(
+    age.factor = case_when(
+      age < 17 ~ "<17",
+      age < 30 ~ "17-29",
+      age < 40 ~ "30-39",
+      age < 50 ~ "40-49",
+      age < 60 ~ "50-59",
+      age < 70 ~ "60-69",
+      age < 80 ~ "70-79",
+      is.na(age) ~ NA_character_,
+      TRUE ~ "80+"
+    )
+  )
+
+
+# Set-up ------------------------------------------------------------------
+
+# Create lists of subjids who meet criteria
+all_patients <- scot_data %>%
+  distinct(subjid) %>%
+  pull(subjid)
+
+corna_confirmed <- scot_data %>%
+  filter(corna_mbcat == "YES - Confirmed") %>%
+  distinct(subjid) %>%
+  pull(subjid)
+
+corna_suspected <- scot_data %>%
+  filter(corna_mbcat == "YES - Probable") %>%
+  distinct(subjid) %>%
+  pull(subjid)
+
+corna_unknown <- scot_data %>%
+  distinct(subjid) %>%
+  filter(!subjid %in% c(corna_confirmed, corna_suspected)) %>%
+  pull(subjid)
+
+travelled <- scot_data %>%
+  filter(travel_erterm == "Yes") %>%
+  distinct(subjid) %>%
+  pull(subjid)
+
+died <- scot_data %>%
+  filter(dsterm == "Death") %>%
+  distinct(subjid) %>%
+  pull(subjid)
+
+male <- scot_data %>%
+  filter(sex == "Male") %>%
+  distinct(subjid) %>%
+  pull(subjid)
+
+female <- scot_data %>%
+  filter(sex == "Female") %>%
+  distinct(subjid) %>%
+  pull(subjid)
+
+# Breakdown of gender, age and death
+# Used for population pyramid
+
+
+pop_data <- scot_data %>%
+  group_by(subjid) %>%
+  filter(!subjid %in% travelled) %>%
+  mutate(died = if_else(subjid %in% died, 1, 0)) %>%
+  summarise(
+    age = first(na.omit(age.factor)),
+    sex = first(na.omit(sex)),
+    ethnicity = first(na.omit(ethnicity)),
+    pregnancy = first(na.omit(pregyn_rptestcd)),
+    admission = first(na.omit(cestdat)),
+    outcome = first(na.omit(dsterm))
+  ) %>%
+  mutate(died = case_when(outcome == "Death" ~ "Yes", TRUE ~ "No") %>% factor(levels = c("No", "Yes")))
+```
+
 *Data Extracted from CoCIN - (save date and time for extract to be used here)*
 
 As of the above extract time the database contains records for:
 
-* `r "XX"` patients in Scottish hospitals
-* `r "XX"` of those patients have died
-* Of these patients
-
-  + `r "XX"` are confirmed CoVID-19 cases
-  + `r "XX"` are suspected cases
-  + `r "XX"` are unknown cases
-* `r "XX"` patients are identified as being pregnant
-* `r "XX"` patients had travelled in the 14 days before admission and have been excluded from the analyses below
+* `r length(all_patients)` patients in Scottish hospitals, `r length(died)` of those patients have died.
+* Of these Scottish patients
+  + `r length(corna_confirmed)` are confirmed CoVID-19 cases
+  + `r length(corna_suspected)` are suspected cases
+  + `r length(corna_unknown)` are unknown cases
+  + `r length(travelled)` patients had travelled in the 14 days before admission and have been excluded from all subsequent analyses
+* `r nrow(pop_data %>% filter(pregnancy == "YES"))` patients are identified as being pregnant
 
 ## NHS Health Board summary
 
 ```{r hb_table}
+hb_summary_ex_travelled <- scot_data %>%
+  group_by(HB2019Name) %>%
+  filter(!subjid %in% travelled & !(is.na(HB2019Name))) %>%
+  distinct(subjid, .keep_all = T) %>%
+  summarise(
+    total_cases = n(),
+    n_hosptials = n_distinct(hospid),
+    confirmed_cases = sum(subjid %in% corna_confirmed),
+    suspected_cases = sum(subjid %in% corna_suspected),
+    unknown_cases = sum(subjid %in% corna_unknown),
+    deaths = sum(subjid %in% died)
+  )
 
+hb_summary_ex_travelled %>%
+  gt() %>%
+  tab_header(
+    title = "Summary of NHS Scotland Health Boards",
+    subtitle = str_glue("Excludes {n_travelled} who travelled in the 14 days prior to admission",
+      n_travelled = length(travelled)
+    )
+  ) %>%
+  cols_align(
+    align = "right"
+  ) %>%
+  cols_align(
+    align = "left",
+    columns = vars(HB2019Name)
+  ) %>%
+  cols_label(
+    HB2019Name = "NHS Health Board",
+    total_cases = "Number of cases",
+    n_hosptials = "Number of hospitals",
+    confirmed_cases = "Number of confirmed",
+    suspected_cases = "Number of suspected",
+    unknown_cases = "Number where status is unknown",
+    deaths = "Number of deaths"
+  )
 ```
 
 ## Age Breakdown
-*Age is unknown for `r "X.X"`% of patients*
-```{r age_table}
+```{r age_analysis}
+# Age analysis
+age_summary <- pop_data %>%
+  group_by(age) %>%
+  summarise(total_cases = n()) %>%
+  mutate(percent = paste(round(total_cases / sum(total_cases) * 100, 1), "%"))
 
+na_age_pct <- (nrow(pop_data %>% filter(is.na(age))) / nrow(pop_data)) * 100
+```
+
+*Age is unknown for `r na_age_pct`% of patients*
+```{r age_table}
+age_summary # Turn this into a nice table
 ```
 
 ## Population pyramid
 Patients who have died are highlighted
 ```{r pop_pyramid}
-
+# Population pyramid
+ggplot(pop_data, aes(x = age, fill = sex, alpha = died)) +
+  geom_bar(data = filter(pop_data, sex == "Female")) +
+  geom_bar(data = filter(pop_data, sex == "Male"), aes(y = ..count.. * (-1))) +
+  scale_fill_discrete("Sex at birth") +
+  scale_alpha_ordinal("Died", range = c(0.3, 1)) +
+  coord_flip() +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  ylim(-100, 100) +
+  xlab("Age") +
+  ylab("Count of subjects") +
+  ggtitle("Population pyramid of ISARIC subjects from Scottish hospitals",
+    subtitle = str_glue("Excludes {n_travelled} who travelled in the 14 days prior to admission",
+      n_travelled = length(travelled)
+    )
+  )
 ```
 
 ## Ethnicity Breakdown
-*`r "X.X"`% of patients are of white ethnicity. Ethnicity is unknown for `r "X.X"`% of patients.* 
-```{r ethnicity_table}
+```{r ethnicity_analysis}
+## Ethnicity analysis
 
+ethnicity_data <- pop_data %>%
+  group_by(ethnicity) %>%
+  filter(!subjid %in% travelled) %>%
+  summarise(total_cases = n()) %>%
+  mutate(percent = paste(round(total_cases / sum(total_cases) * 100, 1), "%"))
+
+white_ethn_pct <- (nrow(pop_data %>% filter(ethnicity == "White")) / nrow(pop_data)) * 100
+na_ethn_pct <- (nrow(pop_data %>% filter(is.na(ethnicity))) / nrow(pop_data)) * 100
+```
+*`r white_ethn_pct`% of patients are of white ethnicity. Ethnicity is unknown for `r na_ethn_pct`% of patients.* 
+```{r ethnicity_table}
+ethnicity_data
 ```
 
 ## Onset Week
-This analysis using onset date of first/earliest symptom (some patients were in hospital before the start of the pandemic). Week 1 has been selected as the earliest week in which a patient showed symptoms – `r "DATE"`, week `r "n"` is the current week.
+```{r onset_week_analysis}
+## Admission date analysis
+## Analysing by onset date of first/earliest symptom
+## Week 1 - 23/03/2020
+
+admission_data <- pop_data %>%
+  filter(admission <= today()) %>%
+  mutate(
+    admissionweek =
+      case_when(
+        admission < "2020-03-30" ~ "Week 1",
+        admission < "2020-04-06" ~ "Week 2",
+        admission < "2020-04-13" ~ "Week 3",
+        admission < "2020-04-20" ~ "Week 4",
+        admission < "2020-04-27" ~ "Week 5",
+        admission < "2020-05-04" ~ "Week 6",
+        TRUE ~ "NA"
+      )
+  ) %>%
+  group_by(admissionweek) %>%
+  summarise(total_cases = n()) %>%
+  mutate(percent = paste(round(total_cases / sum(total_cases) * 100, 1), "%"))
+
+week1_date <- "March 23 2020"
+latest_week <- max(admission_data %>% pull(admissionweek))
+```
+
+This analysis using onset date of first/earliest symptom (some patients were in hospital before the start of the pandemic). Week 1 has been selected as the earliest week in which a patient showed symptoms – `r week1_date`, `r latest_week` is the current week.
 
 ```{r onset_week_table}
-
+admission_data
 ```

@@ -73,16 +73,18 @@ female <- scot_data %>%
 # Used for population pyramid
 
 
-pop_data <- scot_data %>% 
-  group_by(subjid) %>% 
-  filter(!subjid %in% travelled) %>% 
-  mutate(died = if_else(subjid %in% died, 1, 0)) %>% 
-  summarise(age = first(na.omit(age.factor)),
-            sex = first(na.omit(sex)),
-            ethnicity = first(na.omit(ethnicity)),
-            pregnancy = first(na.omit(pregyn_rptestcd)),
-            admission = first(na.omit(cestdat)),
-            outcome = first(na.omit(dsterm))) %>%
+pop_data <- scot_data %>%
+  group_by(subjid) %>%
+  filter(!subjid %in% travelled) %>%
+  mutate(died = if_else(subjid %in% died, 1, 0)) %>%
+  summarise(
+    age = first(na.omit(age.factor)),
+    sex = first(na.omit(sex)),
+    ethnicity = first(na.omit(ethnicity)),
+    pregnancy = first(na.omit(pregyn_rptestcd)),
+    admission = first(na.omit(cestdat)),
+    outcome = first(na.omit(dsterm))
+  ) %>%
   mutate(died = case_when(outcome == "Death" ~ "Yes", TRUE ~ "No") %>% factor(levels = c("No", "Yes")))
 
 
@@ -131,23 +133,23 @@ hb_summary_ex_travelled <- scot_data %>%
 
 ## Age Summary
 
-age_summary <- pop_data %>% 
-  group_by(age) %>% 
+age_summary <- pop_data %>%
+  group_by(age) %>%
   summarise(total_cases = n()) %>%
-  mutate(percent= paste(round(total_cases/sum(total_cases)*100,1),"%"))
+  mutate(percent = paste(round(total_cases / sum(total_cases) * 100, 1), "%"))
 
 
-## Ethnicity analysis 
+## Ethnicity analysis
 
 ethnicity_data <- pop_data %>%
   group_by(ethnicity) %>%
-  filter(!subjid %in% travelled)  %>% 
+  filter(!subjid %in% travelled) %>%
   summarise(total_cases = n()) %>%
-  mutate(percent= paste(round(total_cases/sum(total_cases)*100,1),"%"))
+  mutate(percent = paste(round(total_cases / sum(total_cases) * 100, 1), "%"))
 
-## Admission date analysis 
-## Analysing by onset date of first/earliest symptom 
-## Week 1 - 23/03/2020 
+## Admission date analysis
+## Analysing by onset date of first/earliest symptom
+## Week 1 - 23/03/2020
 
 admission_data <- pop_data %>%
   filter(admission <= today()) %>%
@@ -167,11 +169,11 @@ admission_data <- pop_data %>%
   summarise(total_cases = n()) %>%
   mutate(percent = paste(round(total_cases / sum(total_cases) * 100, 1), "%"))
 
-## Pregnancy Analysis 
+## Pregnancy Analysis
 
 pregnancy_data <- pop_data %>%
   group_by(pregnancy) %>%
-  summarise(total_cases = n()) 
+  summarise(total_cases = n())
 
 
 

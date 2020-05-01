@@ -1,7 +1,7 @@
 ---
 title: "Scotland Summary statistics"
 author: "Alice Byres, Nicole Jarvie and James McMahon"
-date: "`r lubridate::stamp_date('Thursday, 30 April, 2020')(lubridate::today())`"
+date: "`r Sys.Date() %>% format('%A, %d %B, %Y')`"
 output: html_document
 ---
 

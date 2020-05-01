@@ -126,6 +126,7 @@ hb_summary_ex_travelled <- scot_data %>%
   distinct(subjid, .keep_all = T) %>%
   summarise(
     total_cases = n(),
+    has_chi = sum(!is.na(nhs_chi)),
     n_hosptials = n_distinct(hospid),
     confirmed_cases = sum(subjid %in% corna_confirmed),
     suspected_cases = sum(subjid %in% corna_suspected),
@@ -151,6 +152,7 @@ hb_summary_ex_travelled %>%
   cols_label(
     HB2019Name = "NHS Health Board",
     total_cases = "Number of cases",
+    has_chi = "Number of patients with CHI number",
     n_hosptials = "Number of hospitals",
     confirmed_cases = "Number of confirmed",
     suspected_cases = "Number of suspected",

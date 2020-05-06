@@ -250,7 +250,27 @@ na_ethn_pct <- (nrow(pop_data %>% filter(is.na(ethnicity))) / nrow(pop_data)) * 
 ```
 *`r white_ethn_pct`% of patients are of white ethnicity. Ethnicity is unknown for `r na_ethn_pct`% of patients.* 
 ```{r ethnicity_table}
-ethnicity_data
+ethnicity_data %>%
+  gt() %>%
+  tab_options(table.align = "left") %>% 
+  tab_header(
+    title = "Ethnicity breakdown",
+    subtitle = str_glue("Excludes {n_travelled} who travelled in the 14 days prior to admission",
+      n_travelled = length(travelled)
+    )
+  ) %>%
+  cols_align(
+    align = "right"
+  ) %>%
+  cols_align(
+    align = "left",
+    columns = vars(ethnicity)
+  ) %>%
+  cols_label(
+    ethnicity = "Ethnicity",
+    total_cases = "Number of cases",
+    percent = "Percentage"
+  )
 ```
 
 ## Onset Week

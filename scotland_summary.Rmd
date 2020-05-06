@@ -5,8 +5,8 @@ date: "`r Sys.Date() %>% format('%A, %d %B, %Y')`"
 output: html_document
 ---
 
-```{r setup, include=FALSE, echo=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 
 library(tidyverse)
 library(lubridate)
@@ -25,7 +25,7 @@ if (!exists("scot_data")) { # Use this with rmarkdown::render("scotland_summary.
 }
 ```
 
-```{r data_prep}
+```{r data_prep, include = FALSE}
 # Fixes -------------------------------------------------------------------
 # Change the age groupings
 scot_data <- scot_data %>%
@@ -119,7 +119,7 @@ As of the above extract time the database contains records for:
 
 ## NHS Health Board summary
 
-```{r hb_table}
+```{r hb_analysis, include = FALSE}
 hb_summary_ex_travelled <- scot_data %>%
   group_by(HB2019Name) %>%
   filter(!subjid %in% travelled & !(is.na(HB2019Name))) %>%
@@ -133,7 +133,9 @@ hb_summary_ex_travelled <- scot_data %>%
     unknown_cases = sum(subjid %in% corna_unknown),
     deaths = sum(subjid %in% died)
   )
+```
 
+```{r hb_table}
 hb_summary_ex_travelled %>%
   gt() %>%
   tab_header(
@@ -162,7 +164,7 @@ hb_summary_ex_travelled %>%
 ```
 
 ## Age Breakdown
-```{r age_analysis}
+```{r age_analysis, include = FALSE}
 # Age analysis
 age_summary <- pop_data %>%
   group_by(age) %>%
@@ -200,7 +202,7 @@ ggplot(pop_data, aes(x = age, fill = sex, alpha = died)) +
 ```
 
 ## Ethnicity Breakdown
-```{r ethnicity_analysis}
+```{r ethnicity_analysis, include = FALSE}
 ## Ethnicity analysis
 
 ethnicity_data <- pop_data %>%
@@ -218,7 +220,7 @@ ethnicity_data
 ```
 
 ## Onset Week
-```{r onset_week_analysis}
+```{r onset_week_analysis, include = FALSE}
 ## Admission date analysis
 ## Analysing by onset date of first/earliest symptom
 ## Week 1 - 23/03/2020

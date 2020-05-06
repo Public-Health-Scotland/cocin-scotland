@@ -1,7 +1,7 @@
 ---
 title: "Scotland Summary statistics"
 author: "Alice Byers, Nicole Jarvie and James McMahon"
-date: "`r Sys.Date() %>% format('%A, %d %B, %Y')`"
+date: "`r format(Sys.Date(), '%A, %d %B, %Y') `"
 output: html_document
 ---
 

@@ -6,7 +6,12 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = "left"
+)
 
 library(tidyverse)
 library(lubridate)
@@ -140,6 +145,7 @@ hb_summary_ex_travelled <- scot_data %>%
 ```{r hb_table}
 hb_summary_ex_travelled %>%
   gt() %>%
+  tab_options(table.align = "left") %>% 
   tab_header(
     title = "Summary of NHS Scotland Health Boards",
     subtitle = str_glue("Excludes {n_travelled} who travelled in the 14 days prior to admission",
@@ -186,6 +192,7 @@ na_age_pct <- (nrow(pop_data %>% filter(is.na(age))) / nrow(pop_data)) * 100
 ```{r age_table}
 age_summary %>%
   gt() %>%
+  tab_options(table.align = "left") %>% 
   tab_header(
     title = "Age breakdown",
     subtitle = str_glue("Excludes {n_travelled} who travelled in the 14 days prior to admission",

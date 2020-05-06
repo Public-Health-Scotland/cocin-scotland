@@ -122,6 +122,7 @@ As of the above extract time the database contains records for:
 
 ```{r hb_analysis, include = FALSE}
 hb_summary_ex_travelled <- scot_data %>%
+  mutate(HB2019Name = as_factor(HB2019Name) %>% fct_explicit_na(na_level = "Hospital code errors")) %>% 
   group_by(HB2019Name) %>%
   filter(!subjid %in% travelled & !(is.na(HB2019Name))) %>%
   distinct(subjid, .keep_all = T) %>%

@@ -184,7 +184,26 @@ na_age_pct <- (nrow(pop_data %>% filter(is.na(age))) / nrow(pop_data)) * 100
 
 *Age is unknown for `r na_age_pct`% of patients*
 ```{r age_table}
-age_summary # Turn this into a nice table
+age_summary %>%
+  gt() %>%
+  tab_header(
+    title = "Age breakdown",
+    subtitle = str_glue("Excludes {n_travelled} who travelled in the 14 days prior to admission",
+      n_travelled = length(travelled)
+    )
+  ) %>%
+  cols_align(
+    align = "right"
+  ) %>%
+  cols_align(
+    align = "left",
+    columns = vars(age)
+  ) %>%
+  cols_label(
+    age = "Age band",
+    total_cases = "Number of cases",
+    percent = "Percentage"
+  )
 ```
 
 ## Population pyramid

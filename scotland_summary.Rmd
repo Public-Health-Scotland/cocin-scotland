@@ -114,7 +114,7 @@ pop_data <- scot_data %>%
 
 As of the above extract time the database contains records for:
 
-# Can't work out how to get subsetted list to work!!
+<!---Can't work out how to get subsetted list to work!!-->
 * `r length(all_patients)` patients in Scottish hospitals, `r length(died)` of those patients have died.
 * `r length(corna_confirmed)` are confirmed CoVID-19 cases
 * `r length(corna_suspected)` are suspected cases

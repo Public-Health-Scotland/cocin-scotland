@@ -15,6 +15,7 @@ knitr::opts_chunk$set(
 
 library(tidyverse)
 library(lubridate)
+library(scales)
 library(finalfit)
 library(RCurl)
 library(Hmisc)
@@ -188,7 +189,7 @@ age_summary <- pop_data %>%
 na_age_pct <- (nrow(pop_data %>% filter(is.na(age))) / nrow(pop_data)) * 100
 ```
 
-*Age is unknown for `r na_age_pct`% of patients*
+*Age is unknown for `r number(na_age_pct, accuracy = 0.1)`% of patients*
 ```{r age_table}
 age_summary %>%
   gt() %>%
@@ -248,7 +249,7 @@ ethnicity_data <- pop_data %>%
 white_ethn_pct <- (nrow(pop_data %>% filter(ethnicity == "White")) / nrow(pop_data)) * 100
 na_ethn_pct <- (nrow(pop_data %>% filter(is.na(ethnicity))) / nrow(pop_data)) * 100
 ```
-*`r white_ethn_pct`% of patients are of white ethnicity. Ethnicity is unknown for `r na_ethn_pct`% of patients.* 
+*`r number(white_ethn_pct, accuracy = 0.1)`% of patients are of white ethnicity. Ethnicity is unknown for `r number(na_ethn_pct, accuracy = 0.1)`% of patients.* 
 ```{r ethnicity_table}
 ethnicity_data %>%
   gt() %>%

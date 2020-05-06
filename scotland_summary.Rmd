@@ -162,6 +162,12 @@ hb_summary_ex_travelled %>%
     suspected_cases = "Number of suspected",
     unknown_cases = "Number where status is unknown",
     deaths = "Number of deaths"
+  ) %>%
+  summary_rows(
+    columns = vars(total_cases, has_chi, n_hosptials, confirmed_cases, suspected_cases, unknown_cases, deaths),
+    fns = list(
+      Scotland = ~ sum(.)
+    ), drop_trailing_zeros = TRUE
   )
 ```
 

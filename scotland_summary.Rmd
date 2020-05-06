@@ -109,13 +109,14 @@ pop_data <- scot_data %>%
 
 As of the above extract time the database contains records for:
 
+# Can't work out how to get subsetted list to work!!
 * `r length(all_patients)` patients in Scottish hospitals, `r length(died)` of those patients have died.
-* Of these Scottish patients
-  + `r length(corna_confirmed)` are confirmed CoVID-19 cases
-  + `r length(corna_suspected)` are suspected cases
-  + `r length(corna_unknown)` are unknown cases
-  + `r length(travelled)` patients had travelled in the 14 days before admission and have been excluded from all subsequent analyses
-* `r nrow(pop_data %>% filter(pregnancy == "YES"))` patients are identified as being pregnant
+* `r length(corna_confirmed)` are confirmed CoVID-19 cases
+* `r length(corna_suspected)` are suspected cases
+* `r length(corna_unknown)` are unknown cases
+
+* `r length(travelled)` patients had travelled in the 14 days before admission and have been excluded from all subsequent analyses
+* `r nrow(pop_data %>% filter(pregnancy == "YES"))` patients are identified as being pregnant (excluding those who travelled)
 
 ## NHS Health Board summary
 

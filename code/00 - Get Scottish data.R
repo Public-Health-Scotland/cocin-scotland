@@ -53,6 +53,9 @@ if (class(extract) == "character") {
   warning("Something went wrong with the extract")
 }
 
+# Store extract date
+extract_date <- Sys.time()
+
 ## Add on Location details for Scottish hospitals where we can
 # Get Hosptial Lookup and Board names from the NHS Scotland Opendata platform
 

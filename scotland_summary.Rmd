@@ -105,7 +105,7 @@ pop_data <- scot_data %>%
   mutate(died = case_when(outcome == "Death" ~ "Yes", TRUE ~ "No") %>% factor(levels = c("No", "Yes")))
 ```
 
-*Data Extracted from CoCIN - (save date and time for extract to be used here)*
+*Data Extracted from CoCIN - `r format(extract_date, "%A, %d %B, %Y - %H:%M%p")`*
 
 As of the above extract time the database contains records for:
 

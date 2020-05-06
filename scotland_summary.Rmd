@@ -304,5 +304,25 @@ latest_week <- max(admission_data %>% pull(admissionweek))
 This analysis using onset date of first/earliest symptom (some patients were in hospital before the start of the pandemic). Week 1 has been selected as the earliest week in which a patient showed symptoms – `r week1_date`, `r latest_week` is the current week.
 
 ```{r onset_week_table}
-admission_data
+admission_data %>%
+  gt() %>%
+  tab_options(table.align = "left") %>% 
+  tab_header(
+    title = "Ethnicity breakdown",
+    subtitle = str_glue("Excludes {n_travelled} who travelled in the 14 days prior to admission",
+      n_travelled = length(travelled)
+    )
+  ) %>%
+  cols_align(
+    align = "right"
+  ) %>%
+  cols_align(
+    align = "left",
+    columns = vars(admissionweek)
+  ) %>%
+  cols_label(
+    admissionweek = "Week of admission",
+    total_cases = "Number of cases",
+    percent = "Percentage"
+  )
 ```

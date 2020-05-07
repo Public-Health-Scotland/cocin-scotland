@@ -309,7 +309,7 @@ admission_data %>%
   gt() %>%
   tab_options(table.align = "left") %>% 
   tab_header(
-    title = "Ethnicity breakdown",
+    title = "Week of Admission",
     subtitle = str_glue("Excludes {n_travelled} who travelled in the 14 days prior to admission",
       n_travelled = length(travelled)
     )

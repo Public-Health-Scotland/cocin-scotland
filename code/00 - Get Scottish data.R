@@ -14,6 +14,17 @@ library(tidylog)
 library(Hmisc)
 
 ## API pull
+# If the file with the API token doesn't exist create it now
+if (!file.exists("stored_ccp_token.txt")) {
+  message("stored_ccp_token.txt doesn't exist, creating it now.")
+  file.create("stored_ccp_token.txt")
+
+  readline(prompt = "Enter API token:") %>% 
+    write_lines("stored_ccp_token.txt")
+}
+
+# Read the token from file
+Sys.setenv("ccp_token" = read_lines("stored_ccp_token.txt"))
 
 ## The API call fail randomly due to traffic
 ## Try 5 times then stop

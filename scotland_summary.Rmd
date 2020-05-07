@@ -4,7 +4,7 @@ author: "Alice Byers, Nicole Jarvie and James McMahon"
 date: "`r format(Sys.Date(), '%A, %d %B, %Y') `"
 output: html_document
 ---
-
+<!-- Note that stored_ccp_token.txt must be created with your API token before this report will work. There is a block of code in 00 which will create it easily -->
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
   echo = FALSE,
@@ -146,7 +146,7 @@ hb_summary_ex_travelled <- scot_data %>%
 ```{r hb_table}
 hb_summary_ex_travelled %>%
   gt() %>%
-  tab_options(table.align = "left") %>% 
+  tab_options(table.align = "left") %>%
   tab_header(
     title = "Summary of NHS Scotland Health Boards",
     subtitle = str_glue("Excludes {n_travelled} who travelled in the 14 days prior to admission",
@@ -193,7 +193,7 @@ na_age_pct <- (nrow(pop_data %>% filter(is.na(age))) / nrow(pop_data)) * 100
 ```{r age_table}
 age_summary %>%
   gt() %>%
-  tab_options(table.align = "left") %>% 
+  tab_options(table.align = "left") %>%
   tab_header(
     title = "Age breakdown",
     subtitle = str_glue("Excludes {n_travelled} who travelled in the 14 days prior to admission",
@@ -253,7 +253,7 @@ na_ethn_pct <- (nrow(pop_data %>% filter(is.na(ethnicity))) / nrow(pop_data)) * 
 ```{r ethnicity_table}
 ethnicity_data %>%
   gt() %>%
-  tab_options(table.align = "left") %>% 
+  tab_options(table.align = "left") %>%
   tab_header(
     title = "Ethnicity breakdown",
     subtitle = str_glue("Excludes {n_travelled} who travelled in the 14 days prior to admission",
@@ -307,7 +307,7 @@ This analysis using onset date of first/earliest symptom (some patients were in 
 ```{r onset_week_table}
 admission_data %>%
   gt() %>%
-  tab_options(table.align = "left") %>% 
+  tab_options(table.align = "left") %>%
   tab_header(
     title = "Week of Admission",
     subtitle = str_glue("Excludes {n_travelled} who travelled in the 14 days prior to admission",

@@ -13,8 +13,10 @@ library(finalfit)
 library(tidylog)
 library(Hmisc)
 
-# Enter API Token
 
+### 1 - Extract data from RedCap via API ----
+
+# Enter API Token
 Sys.setenv(
   ccp_token = 
     rstudioapi::showPrompt(
@@ -22,21 +24,19 @@ Sys.setenv(
       message = "API token:"
     ))
 
-
-## The API call fail randomly due to traffic
-## Try 5 times then stop
+# Call API allowing for up to 5 tries 
 tries <- 0
 extract <- NA
 
 ## Note - need to come off the VPN connection for the below 
 while (tries == 0 | (tries < 5 & inherits(extract, "try-error"))) {
-
+  
   # Avoid using the API on the hour as this is when a lot of reports refresh
   while (minute(Sys.time()) %in% c(59, 0:5)) {
     message("Waiting till after the hour to avoid overloading the API")
     Sys.sleep(30)
   }
-
+  
   extract <- try(postForm(
     uri = "https://ncov.medsci.ox.ac.uk/api/",
     token = Sys.getenv("ccp_token"),
@@ -51,18 +51,19 @@ while (tries == 0 | (tries < 5 & inherits(extract, "try-error"))) {
     returnFormat = "json"
   ))
   tries <- tries + 1
-  # let's wait to let the API cool off
   Sys.sleep(10)
 }
 
+# Read csv extract
 if (class(extract) == "character") {
   extract <- read_csv(extract, na = "", guess_max = 20000)
+  extract_date <- Sys.time()
 } else {
   warning("Something went wrong with the extract")
 }
 
-# Store extract date
-extract_date <- Sys.time()
+
+### 2 - Select Scottish data
 
 ## Add on Location details for Scottish hospitals where we can
 # Get Hosptial Lookup and Board names from the NHS Scotland Opendata platform

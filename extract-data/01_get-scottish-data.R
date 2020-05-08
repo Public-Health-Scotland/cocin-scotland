@@ -2,11 +2,12 @@
 # Name of script: 01_get-scottish-data.R
 # Written by: Analysts working in HPS Enhanced Surveillance
 #             Cell - Hospital/ICU Work Stream
-
+# Credit to: University of Edinburgh Surgical Informatics
+#
 # Type of script: Data Extraction
 # Written/run on: R Studio Desktop
 # Version of R: 3.6.1
-
+#
 # Description: Extract data from CoCIN RedCap database
 #              and select Scotland records only
 ###########################################################
@@ -119,7 +120,8 @@ extract %<>%
 # Data extract
 write_rds(
   extract,
-  here("data", paste0(date(extract_date), "_scot-data.rds"))
+  here("data", paste0(date(extract_date), "_scot-data.rds")),
+  compress = "gz"
 )
 
 # Summary of records by location

@@ -1,7 +1,15 @@
-## CoCIN Data Extraction 
-## Enhanced Surveillance Cell 
-## ICU and Hospital Work Stream 
-## Analytical Team 
+###########################################################
+# Name of script: 01_get-scottish-data.R
+# Written by: Analysts working in HPS Enhanced Surveillance
+#             Cell - Hospital/ICU Work Stream
+
+# Type of script: Data Extraction
+# Written/run on: R Studio Desktop
+# Version of R: 3.6.1
+
+# Description: Extract data from CoCIN RedCap database
+#              and select Scotland records only
+###########################################################
 
 
 ### 0 - Load packages ----
@@ -13,6 +21,7 @@ library(finalfit)
 library(tidylog)
 library(Hmisc)
 library(janitor)
+library(magrittr)
 
 
 ### 1 - Extract data from RedCap via API ----
@@ -64,8 +73,9 @@ if (class(extract) == "character") {
 }
 
 
-### 2 - Select Scottish data
+### 2 - Select Scottish data ----
 
+# Create scottish location lookup
 scot_locations <-
   
   # Extract Scottish hospital location codes
@@ -87,38 +97,37 @@ scot_locations <-
   
   clean_names()
 
-
-# Join on HB names
-scot_locations <- left_join(scot_locations, hb_names, by = "HB") %>% 
-  # Do some renaming to make it match old lookup so we don't have to change other code
-  rename(Locname = LocationName,
-         HB2019Name = HBName,
-         HB2019 = HB)
-
-extract <- extract %>%
+# Match lookup to CoCIN extract
+extract %<>%
   mutate(hospid = str_sub(subjid, end = 5)) %>%
-  left_join(scot_locations, by = c("hospid" = "Location"))
+  left_join(scot_locations, by = c("hospid" = "location"))
 
-## Work out what the Scottish data access groups are
-scot_groups <- extract %>%
-  filter(!is.na(Locname)) %>%
+# Extract list of Data Access Groups (DAG) associated with Scottish locations
+scot_dag <-
+  extract %>%
+  filter(!is.na(location_name)) %>%
   distinct(redcap_data_access_group)
 
-# Filter to Scottish data
-scot_data <- extract %>%
-  inner_join(scot_groups, by = "redcap_data_access_group") %>%
-  # Had a Scottish hosps with data access group = NA
-  filter(!is.na(redcap_data_access_group) | hospid %in% pull(scot_locations, Location))
+# Select CoCIN records 
+extract %<>%
+  filter(redcap_data_access_group %in% scot_dag |
+           !is.na(location_name))
 
-# Check data
-scot_data %>%
-  count(HB2019Name, redcap_data_access_group, hospid, Locname) %>%
-  View()
 
-# Run UoE labelling code (should probably tidy this up to figure out what is actually needed)
-data <- scot_data
-source("CCPUKSARI_R_2020-03-04_1532.R")
-scot_data <- data
+### 3 - Save data extract and record summary ----
 
-# Clean up
-rm(extract, data, tries, hb_names)
+# Data extract
+write_rds(
+  extract,
+  here("data", paste0(date(extract_date), "_scot-data.rds"))
+)
+
+# Summary of records by location
+write_csv(
+  extract %>%
+    count(hb_name, redcap_data_access_group, hospid, location_name),
+  here("data", paste0(date(extract_date), "_scot-record-summary.csv"))
+)
+
+
+### END OF SCRIPT ###

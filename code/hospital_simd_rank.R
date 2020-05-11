@@ -3,6 +3,7 @@ library(dbplyr) # Easy SQL extracting
 library(janitor) # Cleaning variable names
 library(readr) # Read SIMD lookup
 library(lubridate) # Working with dates
+library(tidyr) # Flip the pop data
 
 # Set up the SMRA connection
 SMRA_connection <- odbc::dbConnect(
@@ -44,12 +45,46 @@ extract <- tbl(SMRA_connection, "SMR01_PI") %>%
     SEX
   )
 
-# From NHS Scotland Open data (SIMD2020)
+# From NHS Scotland Open data 
+# SIMD2020 ranks by datazone
 # https://www.opendata.nhs.scot/dataset/scottish-index-of-multiple-deprivation/resource/acade396-8430-4b34-895a-b3e757fa346e
 simd_lookup <- read_csv("https://www.opendata.nhs.scot/dataset/78d41fa9-1a62-4f7b-9edb-3e8522a93378/resource/acade396-8430-4b34-895a-b3e757fa346e/download/simd2020_02042020.csv",
   col_types = "c____i__________"
 ) %>%
   clean_names()
+
+# 2018 Population estimates by DataZone
+pop_lookup <- read_csv("https://www.opendata.nhs.scot/dataset/7f010430-6ce1-4813-b25c-f7f335bdc4dc/resource/c505f490-c201-44bd-abd1-1bd7a64285ee/download/dz2011-pop-est_02042020.csv") %>%
+  clean_names() %>%
+  # Keep 2018 only and filter the derived pops (full Scotland)
+  filter(year == 2018, is.na(data_zone_qf)) %>%
+  select(-year, -data_zone_qf, -all_ages) %>%
+  pivot_longer(
+    cols = starts_with("age"),
+    names_to = "age",
+    names_prefix = "age",
+    values_to = "pop"
+  ) %>%
+  # Turn age to the age bands we need
+  mutate(
+    age = if_else(age == "90plus", 90L, as.integer(age)),
+    age.factor = case_when(
+      age < 10 ~ "<10",
+      age < 20 ~ "10-19",
+      age < 30 ~ "20-29",
+      age < 40 ~ "30-39",
+      age < 50 ~ "40-49",
+      age < 60 ~ "50-59",
+      age < 70 ~ "60-69",
+      age < 80 ~ "70-79",
+      is.na(age) ~ NA_character_,
+      TRUE ~ "80+"
+    ) %>%
+      factor(),
+    sex.factor = as.factor(sex)
+  ) %>%
+  group_by(data_zone, age.factor, sex.factor) %>%
+  summarise(pop = sum(pop))
 
 # Set codes for non-elective admissions
 non_el_codes <-
@@ -114,6 +149,7 @@ data_clean %>%
   group_by(dag_id, age.factor, sex.factor) %>%
   summarise(mean_simd = mean(simd2020rank, na.rm = TRUE)) %>% 
   write_csv("hospital_simd_rank_age_sex.csv")
+
 
 
 

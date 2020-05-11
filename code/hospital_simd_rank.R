@@ -35,6 +35,7 @@ extract <- tbl(SMRA_connection, "SMR01_PI") %>%
   # Variables we want to keep
   select(
     ADMISSION_DATE,
+    ADMISSION_TYPE,
     ENCRYPTED_UPI,
     CIS_MARKER,
     LOCATION,
@@ -50,6 +51,10 @@ simd_lookup <- read_csv("https://www.opendata.nhs.scot/dataset/78d41fa9-1a62-4f7
 ) %>%
   clean_names()
 
+# Set codes for non-elective admissions
+non_el_codes <-
+  c(20, 21, 22, 30, 31, 32, 33, 34, 35, 36, 38, 39)
+
 # Do the extract, as dblplyr doesn't do summarising well yet.
 data <- collect(extract) %>%
   # clean up variable names
@@ -58,23 +63,21 @@ data <- collect(extract) %>%
   group_by(encrypted_upi, cis_marker) %>%
   summarise(
     admission_date = min(admission_date),
+    # Work out if the stay was elective or non-elective
+    non_elective = if_else(first(admission_type) %in% non_el_codes,
+                           TRUE,
+                           FALSE
+    ),
     dag_id = first(location), # Use UoE varname for hosp
     datazone_2011 = first(datazone_2011),
     age_in_years = first(age_in_years),
     sex = first(sex)
   ) %>%
   # Only keep stays which oringinally admitted in 2018
-  filter(admission_date >= dmy("01/01/2018")) %>% 
-  left_join(simd_lookup, by = c("datazone_2011" = "data_zone"))
+  filter(admission_date >= dmy("01/01/2018"))
 
-# Work out the mean SIMD rank per hospital
-data %>%
-  group_by(dag_id) %>%
-  summarise(mean_simd = mean(simd2020rank, na.rm = TRUE)) %>%
-  write_csv("hospital_simd_rank.csv")
-  
-# Work out the mean SIMD rank per hospital by age and sex
-data %>%
+# Add age bands and sex as factor
+data_clean <- data %>% 
   mutate(
     age.factor = case_when(
       age_in_years < 10 ~ "<10",
@@ -95,9 +98,22 @@ data %>%
       TRUE ~ NA_character_
     ) %>% 
       factor()
-  ) %>%
+  )
+
+# Add on SIMD ranks by datazone
+data_clean <- left_join(data_clean, simd_lookup, by = c("datazone_2011" = "data_zone"))
+
+# Work out the arithmetic mean SIMD rank per hospital
+data_clean %>%
+  group_by(dag_id) %>%
+  summarise(mean_simd = mean(simd2020rank, na.rm = TRUE)) %>%
+  write_csv("hospital_simd_rank.csv")
+  
+# Work out the arithmetic mean SIMD rank per hospital by age and sex
+data_clean %>% 
   group_by(dag_id, age.factor, sex.factor) %>%
   summarise(mean_simd = mean(simd2020rank, na.rm = TRUE)) %>% 
   write_csv("hospital_simd_rank_age_sex.csv")
+
 
 

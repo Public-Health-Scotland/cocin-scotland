@@ -138,18 +138,54 @@ data_clean <- data %>%
 # Add on SIMD ranks by datazone
 data_clean <- left_join(data_clean, simd_lookup, by = c("datazone_2011" = "data_zone"))
 
-# Work out the arithmetic mean SIMD rank per hospital
+# Superseded below
+# # Work out the arithmetic mean SIMD rank per hospital
+# data_clean %>%
+#   group_by(dag_id) %>%
+#   summarise(mean_simd = mean(simd2020rank, na.rm = TRUE)) %>%
+#   write_csv("hospital_simd_rank.csv")
+#
+# # Work out the arithmetic mean SIMD rank per hospital by age and sex
+# data_clean %>%
+#   group_by(dag_id, age.factor, sex.factor) %>%
+#   summarise(mean_simd = mean(simd2020rank, na.rm = TRUE)) %>%
+#   write_csv("hospital_simd_rank_age_sex.csv")
+
+
+# Add on the populations by datazone
+data_clean <- left_join(data_clean, pop_lookup %>%
+  group_by(data_zone) %>%
+  summarise(pop_all = sum(pop)),
+by = c("datazone_2011" = "data_zone")
+)
+
+# Add on the populations by datazone, age and sex
+data_clean <- left_join(data_clean, pop_lookup, by = c(
+  "datazone_2011" = "data_zone",
+  "age.factor",
+  "sex.factor"
+))
+# Define a funtion for weighted geometric mean
+weighted.geomean <- function(x, w, ...) {
+  exp(weighted.mean(log(x), w, ...))
+}
+
 data_clean %>%
   group_by(dag_id) %>%
-  summarise(mean_simd = mean(simd2020rank, na.rm = TRUE)) %>%
+  summarise(
+    arith = mean(simd2020rank, na.rm = TRUE),
+    geom = exp(mean(log(simd2020rank), na.rm = TRUE)),
+    weighted_arith = weighted.mean(simd2020rank, pop_all, na.rm = TRUE),
+    weighted_geom = weighted.geomean(simd2020rank, pop_all, na.rm = TRUE)
+  ) %>%
   write_csv("hospital_simd_rank.csv")
-  
-# Work out the arithmetic mean SIMD rank per hospital by age and sex
-data_clean %>% 
+
+data_clean %>%
   group_by(dag_id, age.factor, sex.factor) %>%
-  summarise(mean_simd = mean(simd2020rank, na.rm = TRUE)) %>% 
+  summarise(
+    arith = mean(simd2020rank, na.rm = TRUE),
+    geom = exp(mean(log(simd2020rank), na.rm = TRUE)),
+    weighted_arith = weighted.mean(simd2020rank, pop_all, na.rm = TRUE),
+    weighted_geom = weighted.geomean(simd2020rank, pop_all, na.rm = TRUE)
+  ) %>%
   write_csv("hospital_simd_rank_age_sex.csv")
-
-
-
-

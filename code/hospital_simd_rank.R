@@ -45,7 +45,7 @@ extract <- tbl(SMRA_connection, "SMR01_PI") %>%
     SEX
   )
 
-# From NHS Scotland Open data 
+# From NHS Scotland Open data
 # SIMD2020 ranks by datazone
 # https://www.opendata.nhs.scot/dataset/scottish-index-of-multiple-deprivation/resource/acade396-8430-4b34-895a-b3e757fa346e
 simd_lookup <- read_csv("https://www.opendata.nhs.scot/dataset/78d41fa9-1a62-4f7b-9edb-3e8522a93378/resource/acade396-8430-4b34-895a-b3e757fa346e/download/simd2020_02042020.csv",
@@ -100,8 +100,8 @@ data <- collect(extract) %>%
     admission_date = min(admission_date),
     # Work out if the stay was elective or non-elective
     non_elective = if_else(first(admission_type) %in% non_el_codes,
-                           TRUE,
-                           FALSE
+      TRUE,
+      FALSE
     ),
     dag_id = first(location), # Use UoE varname for hosp
     datazone_2011 = first(datazone_2011),
@@ -112,7 +112,7 @@ data <- collect(extract) %>%
   filter(admission_date >= dmy("01/01/2018"))
 
 # Add age bands and sex as factor
-data_clean <- data %>% 
+data_clean <- data %>%
   mutate(
     age.factor = case_when(
       age_in_years < 10 ~ "<10",
@@ -131,7 +131,7 @@ data_clean <- data %>%
       sex == 1 ~ "Male",
       sex == 2 ~ "Female",
       TRUE ~ NA_character_
-    ) %>% 
+    ) %>%
       factor()
   )
 

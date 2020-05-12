@@ -191,3 +191,27 @@ data_clean %>%
     weighted_geom = weighted.geomean(simd2020rank, pop_all, na.rm = TRUE)
   ) %>%
   write_csv("hospital_simd_rank_age_sex.csv")
+
+# Output only non-elective admission means at hospital level
+data_clean %>%
+  filter(non_elective) %>% 
+  group_by(dag_id) %>%
+  summarise(
+    arith = mean(simd2020rank, na.rm = TRUE),
+    geom = exp(mean(log(simd2020rank), na.rm = TRUE)),
+    weighted_arith = weighted.mean(simd2020rank, pop_all, na.rm = TRUE),
+    weighted_geom = weighted.geomean(simd2020rank, pop_all, na.rm = TRUE)
+  ) %>%
+  write_csv("hospital_simd_rank_non_el.csv")
+
+# Output only non-elective admission means at hospital, age, sex level
+data_clean %>%
+  filter(non_elective) %>% 
+  group_by(dag_id, age.factor, sex.factor) %>%
+  summarise(
+    arith = mean(simd2020rank, na.rm = TRUE),
+    geom = exp(mean(log(simd2020rank), na.rm = TRUE)),
+    weighted_arith = weighted.mean(simd2020rank, pop_all, na.rm = TRUE),
+    weighted_geom = weighted.geomean(simd2020rank, pop_all, na.rm = TRUE)
+  ) %>%
+  write_csv("hospital_simd_rank_age_sex_non_el.csv")

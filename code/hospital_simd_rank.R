@@ -170,6 +170,7 @@ weighted.geomean <- function(x, w, ...) {
   exp(weighted.mean(log(x), w, ...))
 }
 
+# Output all admission means at hospital level
 data_clean %>%
   group_by(dag_id) %>%
   summarise(
@@ -180,6 +181,7 @@ data_clean %>%
   ) %>%
   write_csv("hospital_simd_rank.csv")
 
+# Output all admission means at hospital, age, sex level
 data_clean %>%
   group_by(dag_id, age.factor, sex.factor) %>%
   summarise(

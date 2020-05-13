@@ -67,6 +67,11 @@ if (class(extract) == "character") {
 # Store extract date
 extract_date <- Sys.time()
 
+# Fix some obivously bad loaction codes
+source("code/fix_bad_loc_codes.R")
+extract <- fix_bad_loc_codes(extract)
+
+
 ## Add on Location details for Scottish hospitals where we can
 # Get Hosptial Lookup and Board names from the NHS Scotland Opendata platform
 

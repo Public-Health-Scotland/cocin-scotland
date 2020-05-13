@@ -2,15 +2,14 @@
 title: "Scotland Summary statistics"
 author: "Alice Byers, Nicole Jarvie and James McMahon"
 date: "`r format(Sys.Date(), '%A, %d %B, %Y') `"
-output: html_document
+output: word_document
 ---
 <!-- Note that stored_ccp_token.txt must be created with your API token before this report will work. There is a block of code in 00 which will create it easily -->
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
   echo = FALSE,
   warning = FALSE,
-  message = FALSE,
-  fig.align = "left"
+  message = FALSE
 )
 
 library(tidyverse)
@@ -94,8 +93,6 @@ female <- scot_data %>%
 
 # Breakdown of gender, age and death
 # Used for population pyramid
-
-
 pop_data <- scot_data %>%
   group_by(subjid) %>%
   filter(!subjid %in% travelled) %>%
@@ -126,6 +123,7 @@ As of the above extract time the database contains records for:
 
 ## NHS Health Board summary
 
+
 ```{r hb_analysis, include = FALSE}
 hb_summary_ex_travelled <- scot_data %>%
   mutate(HB2019Name = as_factor(HB2019Name) %>% fct_explicit_na(na_level = "Hospital code errors")) %>%
@@ -143,39 +141,43 @@ hb_summary_ex_travelled <- scot_data %>%
   )
 ```
 
+
 ```{r hb_table}
 hb_summary_ex_travelled %>%
-  gt() %>%
-  tab_options(table.align = "left") %>%
-  tab_header(
-    title = "Summary of NHS Scotland Health Boards",
-    subtitle = str_glue("Excludes {n_travelled} who travelled in the 14 days prior to admission",
-      n_travelled = length(travelled)
-    )
-  ) %>%
-  cols_align(
-    align = "right"
-  ) %>%
-  cols_align(
-    align = "left",
-    columns = vars(HB2019Name)
-  ) %>%
-  cols_label(
-    HB2019Name = "NHS Health Board",
-    total_cases = "Number of cases",
-    has_chi = "Number of patients with CHI number",
-    n_hosptials = "Number of hospitals",
-    confirmed_cases = "Number of confirmed",
-    suspected_cases = "Number of suspected",
-    unknown_cases = "Number where status is unknown",
-    deaths = "Number of deaths"
-  ) %>%
-  summary_rows(
-    columns = vars(total_cases, has_chi, n_hosptials, confirmed_cases, suspected_cases, unknown_cases, deaths),
-    fns = list(
-      Scotland = ~ sum(.)
-    ), drop_trailing_zeros = TRUE
-  )
+  pander::pander(split.table = Inf)
+
+# hb_summary_ex_travelled %>%
+#   gt() %>%
+#   tab_options(table.align = "left") %>%
+#   tab_header(
+#     title = "Summary of NHS Scotland Health Boards",
+#     subtitle = str_glue("Excludes {n_travelled} who travelled in the 14 days prior to admission",
+#       n_travelled = length(travelled)
+#     )
+#   ) %>%
+#   cols_align(
+#     align = "right"
+#   ) %>%
+#   cols_align(
+#     align = "left",
+#     columns = vars(HB2019Name)
+#   ) %>%
+#   cols_label(
+#     HB2019Name = "NHS Health Board",
+#     total_cases = "Number of cases",
+#     has_chi = "Number of patients with CHI number",
+#     n_hosptials = "Number of hospitals",
+#     confirmed_cases = "Number of confirmed",
+#     suspected_cases = "Number of suspected",
+#     unknown_cases = "Number where status is unknown",
+#     deaths = "Number of deaths"
+#   ) %>%
+#   summary_rows(
+#     columns = vars(total_cases, has_chi, n_hosptials, confirmed_cases, suspected_cases, unknown_cases, deaths),
+#     fns = list(
+#       Scotland = ~ sum(.)
+#     ), drop_trailing_zeros = TRUE
+#   )
 ```
 
 ## Age/Sex Breakdown
@@ -195,34 +197,37 @@ na_sex_pct <- (nrow(pop_data %>% filter(is.na(sex))) / nrow(pop_data)) * 100
 *Age is unknown for `r number(na_age_pct, accuracy = 0.1)`% of patients. Sex is unknown for `r number(na_sex_pct, accuracy = 0.1)`% of patients.*
 ```{r age_sex_table}
 age_sex_summary %>%
-  gt() %>%
-  tab_options(table.align = "left") %>%
-  tab_header(
-    title = "Age/Sex breakdown",
-    subtitle = str_glue("Excludes {n_travelled} who travelled in the 14 days prior to admission",
-      n_travelled = length(travelled)
-    )
-  ) %>%
-  cols_align(
-    align = "right"
-  ) %>%
-  cols_align(
-    align = "left",
-    columns = vars(age)
-  ) %>%
-  cols_label(
-    age = "Age band",
-    total_cases = "Number of cases",
-    males = "Number of Males",
-    females = "Number of Females",
-    percent = "Percentage"
-  ) %>% 
-  summary_rows(
-    columns = vars(total_cases, males, females),
-    fns = list(
-      Total = ~ sum(.)
-    ), drop_trailing_zeros = TRUE
-  )
+  pander::pander()
+
+# age_sex_summary %>%
+#   gt() %>%
+#   tab_options(table.align = "left") %>%
+#   tab_header(
+#     title = "Age/Sex breakdown",
+#     subtitle = str_glue("Excludes {n_travelled} who travelled in the 14 days prior to admission",
+#       n_travelled = length(travelled)
+#     )
+#   ) %>%
+#   cols_align(
+#     align = "right"
+#   ) %>%
+#   cols_align(
+#     align = "left",
+#     columns = vars(age)
+#   ) %>%
+#   cols_label(
+#     age = "Age band",
+#     total_cases = "Number of cases",
+#     males = "Number of Males",
+#     females = "Number of Females",
+#     percent = "Percentage"
+#   ) %>% 
+#   summary_rows(
+#     columns = vars(total_cases, males, females),
+#     fns = list(
+#       Total = ~ sum(.)
+#     ), drop_trailing_zeros = TRUE
+#   )
 ```
 
 ## Population pyramid
@@ -241,12 +246,14 @@ ggplot(pop_data, aes(x = age, fill = sex, alpha = died)) +
   theme_minimal() +
   theme(legend.position = "bottom") +
   xlab("Age band") +
-  ylab("Count of patients") +
-  ggtitle("Population pyramid of ISARIC subjects from Scottish hospitals",
-    subtitle = str_glue("Excludes {n_travelled} who travelled in the 14 days prior to admission",
-      n_travelled = length(travelled)
-    )
-  )
+  ylab("Count of patients") 
+
+# +
+#   ggtitle("Population pyramid of ISARIC subjects from Scottish hospitals",
+#     subtitle = str_glue("Excludes {n_travelled} who travelled in the 14 days prior to admission",
+#       n_travelled = length(travelled)
+#     )
+#   )
 ```
 
 ## Ethnicity Breakdown
@@ -264,27 +271,30 @@ na_ethn_pct <- (nrow(pop_data %>% filter(is.na(ethnicity))) / nrow(pop_data)) * 
 ```
 *`r number(white_ethn_pct, accuracy = 0.1)`% of patients are of white ethnicity. Ethnicity is unknown for `r number(na_ethn_pct, accuracy = 0.1)`% of patients.* 
 ```{r ethnicity_table}
-ethnicity_data %>%
-  gt() %>%
-  tab_options(table.align = "left") %>%
-  tab_header(
-    title = "Ethnicity breakdown",
-    subtitle = str_glue("Excludes {n_travelled} who travelled in the 14 days prior to admission",
-      n_travelled = length(travelled)
-    )
-  ) %>%
-  cols_align(
-    align = "right"
-  ) %>%
-  cols_align(
-    align = "left",
-    columns = vars(ethnicity)
-  ) %>%
-  cols_label(
-    ethnicity = "Ethnicity",
-    total_cases = "Number of cases",
-    percent = "Percentage"
-  )
+ethnicity_data%>%
+  pander::pander()
+
+# ethnicity_data %>%
+#   gt() %>%
+#   tab_options(table.align = "left") %>%
+#   tab_header(
+#     title = "Ethnicity breakdown",
+#     subtitle = str_glue("Excludes {n_travelled} who travelled in the 14 days prior to admission",
+#       n_travelled = length(travelled)
+#     )
+#   ) %>%
+#   cols_align(
+#     align = "right"
+#   ) %>%
+#   cols_align(
+#     align = "left",
+#     columns = vars(ethnicity)
+#   ) %>%
+#   cols_label(
+#     ethnicity = "Ethnicity",
+#     total_cases = "Number of cases",
+#     percent = "Percentage"
+#   )
 ```
 
 ## Onset Week
@@ -319,24 +329,27 @@ This analysis using onset date of first/earliest symptom (some patients were in 
 
 ```{r onset_week_table}
 admission_data %>%
-  gt() %>%
-  tab_options(table.align = "left") %>%
-  tab_header(
-    title = "Week of Admission",
-    subtitle = str_glue("Excludes {n_travelled} who travelled in the 14 days prior to admission",
-      n_travelled = length(travelled)
-    )
-  ) %>%
-  cols_align(
-    align = "right"
-  ) %>%
-  cols_align(
-    align = "left",
-    columns = vars(admissionweek)
-  ) %>%
-  cols_label(
-    admissionweek = "Week of admission",
-    total_cases = "Number of cases",
-    percent = "Percentage"
-  )
+  pander::pander()
+
+# admission_data %>%
+#   gt() %>%
+#   tab_options(table.align = "left") %>%
+#   tab_header(
+#     title = "Week of Admission",
+#     subtitle = str_glue("Excludes {n_travelled} who travelled in the 14 days prior to admission",
+#       n_travelled = length(travelled)
+#     )
+#   ) %>%
+#   cols_align(
+#     align = "right"
+#   ) %>%
+#   cols_align(
+#     align = "left",
+#     columns = vars(admissionweek)
+#   ) %>%
+#   cols_label(
+#     admissionweek = "Week of admission",
+#     total_cases = "Number of cases",
+#     percent = "Percentage"
+#   )
 ```

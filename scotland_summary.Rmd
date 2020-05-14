@@ -102,7 +102,8 @@ pop_data <- scot_data %>%
     sex = first(na.omit(sex)),
     ethnicity = first(na.omit(ethnicity)),
     pregnancy = first(na.omit(pregyn_rptestcd)),
-    admission = first(na.omit(cestdat)),
+    symptom_onset = first(na.omit(cestdat)),
+    admission = first(na.omit(hostdat)),
     outcome = first(na.omit(dsterm))
   ) %>%
   mutate(died = case_when(outcome == "Death" ~ "Yes", TRUE ~ "No") %>% factor(levels = c("No", "Yes")))
@@ -299,37 +300,43 @@ ethnicity_data%>%
 
 ## Onset Week
 ```{r onset_week_analysis, include = FALSE}
-## Admission date analysis
+## Onset of symptoms date analysis
 ## Analysing by onset date of first/earliest symptom
 ## Week 1 - 23/03/2020
 
 admission_data <- pop_data %>%
-  filter(admission <= today()) %>%
+  filter(between(admission, dmy("23/03/2020"), today())) %>%
   mutate(
-    admissionweek =
-      case_when(
-        admission < "2020-03-30" ~ "Week 1",
-        admission < "2020-04-06" ~ "Week 2",
-        admission < "2020-04-13" ~ "Week 3",
-        admission < "2020-04-20" ~ "Week 4",
-        admission < "2020-04-27" ~ "Week 5",
-        admission < "2020-05-04" ~ "Week 6",
-        TRUE ~ "NA"
-      )
+    week = floor_date(admission, unit = "week", week_start = 1),
+    iso_week = isoweek(admission)
   ) %>%
-  group_by(admissionweek) %>%
+  group_by(week, iso_week) %>%
+  summarise(total_admissions = n()) %>%
+  ungroup() %>% 
+  mutate(percent_admissions = paste(round(total_admissions / sum(total_admissions) * 100, 1), "%"))
+
+symptom_data <- pop_data %>%
+  filter(between(symptom_onset, dmy("23/03/2020"), today())) %>%
+  mutate(
+    week = floor_date(symptom_onset, unit = "week", week_start = 1),
+    iso_week = isoweek(symptom_onset)
+  ) %>%
+  group_by(week, iso_week) %>%
   summarise(total_cases = n()) %>%
-  mutate(percent = paste(round(total_cases / sum(total_cases) * 100, 1), "%"))
+  ungroup() %>% 
+  mutate(percent_cases = paste(round(total_cases / sum(total_cases) * 100, 1), "%"))
+
+onset_data <- left_join(symptom_data, admission_data)
 
 week1_date <- "March 23 2020"
-latest_week <- max(admission_data %>% pull(admissionweek))
+latest_week <- max(admission_data %>% pull(week))
 ```
 
-This analysis using onset date of first/earliest symptom (some patients were in hospital before the start of the pandemic). Week 1 has been selected as the earliest week in which a patient showed symptoms – `r week1_date`, `r latest_week` is the current week.
+This analysis using onset date of first/earliest symptom (some patients were in hospital before the start of the pandemic). The earliest week in which a patient showed symptoms – `r week1_date` (ISO week `r isoweek(mdy(week1_date))`), `r latest_week` () (ISO week `r isoweek(mdy(latest_week))`), is the current week.
 
 ```{r onset_week_table}
-admission_data %>%
-  pander::pander()
+onset_data %>%
+  pander::pander(split.table = Inf)
 
 # admission_data %>%
 #   gt() %>%

@@ -113,7 +113,15 @@ extract %<>%
            !is.na(location_name))
 
 
-### 3 - Save data extract and record summary ----
+### 3 - Run factor/label code ----
+
+data <- extract
+source("extract-data/CCPUKSARI_R_2020-03-04_1532.R")
+extract <- data
+rm(data)
+
+
+### 4 - Save data extract and record summary ----
 
 # Data extract
 write_rds(

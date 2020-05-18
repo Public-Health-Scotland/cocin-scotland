@@ -1,0 +1,135 @@
+###########################################################
+# Name of script: 01_get-scottish-data.R
+# Written by: Analysts working in HPS Enhanced Surveillance
+#             Cell - Hospital/ICU Work Stream
+# Credit to: University of Edinburgh Surgical Informatics
+#
+# Type of script: Data Extraction
+# Written/run on: R Studio Desktop
+# Version of R: 3.6.1
+#
+# Description: Extract data from CoCIN RedCap database
+#              and select Scotland records only
+###########################################################
+
+
+### 0 - Load packages ----
+
+library(RCurl)
+library(tidyverse)
+library(lubridate)
+library(finalfit)
+library(tidylog)
+library(Hmisc)
+library(janitor)
+library(magrittr)
+
+
+### 1 - Extract data from RedCap via API ----
+
+# Enter API Token
+Sys.setenv(
+  ccp_token = 
+    rstudioapi::showPrompt(
+      title = "Enter API token",
+      message = "API token:"
+    ))
+
+# Call API allowing for up to 5 tries 
+tries <- 0
+extract <- NA
+
+## Note - need to come off the VPN connection for the below 
+while (tries == 0 | (tries < 5 & inherits(extract, "try-error"))) {
+  
+  # Avoid using the API on the hour as this is when a lot of reports refresh
+  while (minute(Sys.time()) %in% c(59, 0:5)) {
+    message("Waiting till after the hour to avoid overloading the API")
+    Sys.sleep(30)
+  }
+  
+  extract <- try(postForm(
+    uri = "https://ncov.medsci.ox.ac.uk/api/",
+    token = Sys.getenv("ccp_token"),
+    content = "record",
+    format = "csv",
+    type = "flat",
+    rawOrLabel = "raw",
+    rawOrLabelHeaders = "raw",
+    exportCheckboxLabel = "false",
+    exportSurveyFields = "false",
+    exportDataAccessGroups = "true",
+    returnFormat = "json"
+  ))
+  tries <- tries + 1
+  Sys.sleep(10)
+}
+
+# Read csv extract
+if (class(extract) == "character") {
+  extract <- read_csv(extract, na = "", guess_max = 20000)
+  extract_date <- Sys.time()
+} else {
+  warning("Something went wrong with the extract")
+}
+
+
+### 2 - Select Scottish data ----
+
+# Create scottish location lookup
+scot_locations <-
+  
+  # Extract Scottish hospital location codes
+  read_csv(
+    paste0("https://www.opendata.nhs.scot/dataset/cbd1802e-0e04-4282-88eb-",
+           "d7bdcfb120f0/resource/c698f450-eeed-41a0-88f7-c1e40a568acc/",
+           "download/current_nhs_hospitals_in_scotland_200420.csv")
+  ) %>%
+  
+  # Extract health board names and join
+  left_join(
+    read_csv(
+      paste0("https://www.opendata.nhs.scot/dataset/9f942fdb-e59e-44f5-",
+             "b534-d6e17229cc7b/resource/f177be64-e94c-4ddf-a2ee-ea58d648d55a/",
+             "download/hb2019_codes_and_labels_21042020.csv")
+    ),
+    by = "HB"
+  ) %>%
+  
+  clean_names()
+
+# Match lookup to CoCIN extract
+extract %<>%
+  mutate(hospid = str_sub(subjid, end = 5)) %>%
+  left_join(scot_locations, by = c("hospid" = "location"))
+
+# Extract list of Data Access Groups (DAG) associated with Scottish locations
+scot_dag <-
+  extract %>%
+  filter(!is.na(location_name)) %>%
+  distinct(redcap_data_access_group)
+
+# Select CoCIN records 
+extract %<>%
+  filter(redcap_data_access_group %in% scot_dag |
+           !is.na(location_name))
+
+
+### 3 - Save data extract and record summary ----
+
+# Data extract
+write_rds(
+  extract,
+  here("data", paste0(date(extract_date), "_scot-data.rds")),
+  compress = "gz"
+)
+
+# Summary of records by location
+write_csv(
+  extract %>%
+    count(hb_name, redcap_data_access_group, hospid, location_name),
+  here("data", paste0(date(extract_date), "_scot-record-summary.csv"))
+)
+
+
+### END OF SCRIPT ###

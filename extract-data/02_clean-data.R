@@ -1,15 +1,34 @@
-## All code from UoE GitHub code
+###########################################################
+# Name of script: 02_clean-data.R
+# Written by: Analysts working in HPS Enhanced Surveillance
+#             Cell - Hospital/ICU Work Stream
+# Credit to: University of Edinburgh Surgical Informatics
+#
+# Type of script: Data Cleaning
+# Written/run on: R Studio Desktop
+# Version of R: 3.6.1
+#
+# Description: Clean CoCIN data extract
+###########################################################
 
-## scot_data <- read_rds("scottish_data.rds.gz")
-# ISARIC REDCap database analysis: DATA PREP
-# Cleaning and preparation of variables
-# Centre for Medical Informatics, Usher Institute, University of Edinburgh 2020
 
-# Functions require library(tidyverse), requires() nor :: not currently written in.
+### 0 - Load packages ----
 
 library(tidyverse)
 library(lubridate)
 library(finalfit)
+
+
+### 1 - Read in data ----
+
+# TO DO: Find latest data extract and read in
+scot_data <-
+  read_rds(
+    here("data", "2020-05-08_scot-data.rds")  
+  )
+
+
+### DON'T UNDERSTAND THE NEED FOR THIS SECTION - REMOVE IF POSSIBLE ###
 
 # Labels -----------------------------------------------------------------------------------------
 ## Tidyverse functions deal inconsistenly with variable label attributes.
@@ -25,6 +44,8 @@ vlabels <- scot_data %>%
       ff_label("Mortality")
   ) %>%
   extract_variable_label()
+
+####
 
 
 # Fix for day 1 tier 1 repeating daily form ---------------------------------------------------------

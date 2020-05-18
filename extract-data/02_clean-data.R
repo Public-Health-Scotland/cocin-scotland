@@ -28,8 +28,6 @@ scot_data <-
   )
 
 
-### DON'T UNDERSTAND THE NEED FOR THIS SECTION - REMOVE IF POSSIBLE ###
-
 # Labels -----------------------------------------------------------------------------------------
 ## Tidyverse functions deal inconsistenly with variable label attributes.
 ## Extract them here as object vlabels.
@@ -367,4 +365,16 @@ keep_14_28 <- scot_data %>%
   filter(keep) %>%
   pull(subjid)
 
-## write_rds(scot_data, "scottish_data_prepped.rds.gz", compress = "gz")
+
+### * - Save cleaned data ----
+
+write_rds(
+  scot_data,
+  here("data", 
+       paste0(latest_extract_date(),
+              "_scot-data-clean.rds") 
+  )
+)
+
+
+### END OF SCRIPT ###

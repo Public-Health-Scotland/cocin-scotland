@@ -29,3 +29,5 @@ output/
 # Ignore PDF and html output files
 *.pdf
 *.html
+
+*.docx

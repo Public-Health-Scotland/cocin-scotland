@@ -24,6 +24,7 @@ library(Hmisc)
 library(janitor)
 library(magrittr)
 library(stringr)
+library(here)
 
 source("functions/fix_bad_loc_codes.R")
 
@@ -128,7 +129,8 @@ extract %<>%
 # Data extract
 write_rds(
   extract,
-  here("data", paste0(date(extract_date), "_scot-data.rds")),
+  here("data", paste0(format(extract_date, "%Y-%m-%d_%H-%M"), 
+                      "_scot-data.rds")),
   compress = "gz"
 )
 
@@ -136,7 +138,8 @@ write_rds(
 write_csv(
   extract %>%
     count(hb_name, redcap_data_access_group, hospid, location_name),
-  here("data", paste0(date(extract_date), "_scot-record-summary.csv"))
+  here("data", paste0(format(extract_date, "%Y-%m-%d_%H-%M"), 
+                      "_scot-record-summary.csv"))
 )
 
 

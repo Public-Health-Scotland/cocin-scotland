@@ -12,19 +12,19 @@
 ###########################################################
 
 
-### 0 - Load packages ----
+### 0 - Run setup environment script ----
 
-library(tidyverse)
-library(lubridate)
-library(finalfit)
+source("extract-data/00_setup-environment.R")
 
 
 ### 1 - Read in data ----
 
-# TO DO: Find latest data extract and read in
 scot_data <-
   read_rds(
-    here("data", "2020-05-08_scot-data.rds")  
+    here("data", 
+         paste0(latest_extract_date(),
+                "_scot-data.rds") 
+    )
   )
 
 

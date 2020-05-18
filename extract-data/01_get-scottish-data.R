@@ -13,20 +13,9 @@
 ###########################################################
 
 
-### 0 - Load packages and functions ----
+### 0 - Run setup environment script ----
 
-library(RCurl)
-library(tidyverse)
-library(lubridate)
-library(finalfit)
-library(tidylog)
-library(Hmisc)
-library(janitor)
-library(magrittr)
-library(stringr)
-library(here)
-
-source("functions/fix_bad_loc_codes.R")
+source("extract-data/00_setup-environment.R")
 
 
 ### 1 - Extract data from RedCap via API ----

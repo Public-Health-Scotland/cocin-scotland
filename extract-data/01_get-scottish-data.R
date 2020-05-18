@@ -13,7 +13,7 @@
 ###########################################################
 
 
-### 0 - Load packages ----
+### 0 - Load packages and functions ----
 
 library(RCurl)
 library(tidyverse)
@@ -23,6 +23,9 @@ library(tidylog)
 library(Hmisc)
 library(janitor)
 library(magrittr)
+library(stringr)
+
+source("functions/fix_bad_loc_codes.R")
 
 
 ### 1 - Extract data from RedCap via API ----
@@ -48,6 +51,7 @@ while (tries == 0 | (tries < 5 & inherits(extract, "try-error"))) {
     Sys.sleep(30)
   }
   
+  print(tries)
   extract <- try(postForm(
     uri = "https://ncov.medsci.ox.ac.uk/api/",
     token = Sys.getenv("ccp_token"),
@@ -75,6 +79,10 @@ if (class(extract) == "character") {
 
 
 ### 2 - Select Scottish data ----
+
+# Fix bad location codes
+extract %<>%
+  fix_bad_loc_codes()
 
 # Create scottish location lookup
 scot_locations <-

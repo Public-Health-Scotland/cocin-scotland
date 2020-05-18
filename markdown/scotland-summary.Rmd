@@ -4,14 +4,17 @@ author: "Alice Byers, Nicole Jarvie and James McMahon"
 date: "`r format(Sys.Date(), '%A, %d %B, %Y') `"
 output: word_document
 ---
-<!-- Note that stored_ccp_token.txt must be created with your API token before this report will work. There is a block of code in 00 which will create it easily -->
+
 ```{r setup, include=FALSE}
+
+# Set default knitr options
 knitr::opts_chunk$set(
   echo = FALSE,
   warning = FALSE,
   message = FALSE
 )
 
+# Load required packages
 library(tidyverse)
 library(lubridate)
 library(scales)
@@ -22,12 +25,19 @@ library(ggplot2)
 library(openxlsx)
 library(gt)
 library(ggplot2)
+library(here)
 
+# Run setup environment for other packages and functions
+source(here("extract-data", "00_setup-environment.R"))
 
-if (!exists("scot_data")) { # Use this with rmarkdown::render("scotland_summary.Rmd") for testing
-  source("code/00 - Get Scottish data.R")
-  source("code/01 - Prep data.R")
-}
+# Read in latest cleaned data extract
+scot_data <-
+  read_rds(
+    here("data", 
+         paste0(latest_extract_date(),
+                "_scot-data-clean.rds") 
+    )
+  )
 ```
 
 ```{r data_prep, include = FALSE}
@@ -118,7 +128,7 @@ pop_data <- scot_data %>%
   )
 ```
 
-*Data Extracted from CoCIN - `r format(extract_date, "%A, %d %B, %Y - %H:%M%p")`*
+*Data Extracted from CoCIN - `r ymd_hm(latest_extract_date())`*
 
 As of the above extract time the database contains records for:
 
@@ -136,9 +146,9 @@ As of the above extract time the database contains records for:
 
 ```{r hb_analysis, include = FALSE}
 hb_summary_ex_travelled <- scot_data %>%
-  mutate(HB2019Name = as_factor(HB2019Name) %>% fct_explicit_na(na_level = "Hospital code errors")) %>%
-  group_by(HB2019Name) %>%
-  filter(!subjid %in% travelled & !(is.na(HB2019Name))) %>%
+  mutate(hb_name = as_factor(hb_name) %>% fct_explicit_na(na_level = "Hospital code errors")) %>%
+  group_by(hb_name) %>%
+  filter(!subjid %in% travelled & !(is.na(hb_name))) %>%
   distinct(subjid, .keep_all = T) %>%
   summarise(
     total_cases = n(),
@@ -170,10 +180,10 @@ hb_summary_ex_travelled %>%
 #   ) %>%
 #   cols_align(
 #     align = "left",
-#     columns = vars(HB2019Name)
+#     columns = vars(hb_name)
 #   ) %>%
 #   cols_label(
-#     HB2019Name = "NHS Health Board",
+#     hb_name = "NHS Health Board",
 #     total_cases = "Number of cases",
 #     has_chi = "Number of patients with CHI number",
 #     n_hosptials = "Number of hospitals",

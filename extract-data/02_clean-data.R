@@ -87,7 +87,7 @@ scot_data %<>%
     
     # If admission date missing, use daily sheet 1 date if available
     hostdat = case_when(
-      str_detect(redcap_event_name, "^Day 1") & 
+      str_detect(redcap_event_name, "^Day 1 ") & 
         is.na(hostdat) & 
         !is.na(daily_dsstdat) ~ daily_dsstdat,
       TRUE ~ hostdat
@@ -268,91 +268,76 @@ scot_data %<>%
   )
 
 
-# Dataset and variable definitions 2 -----------------------------------------------------------
-## Cleaning that may alter original data applied here
-scot_data <- scot_data %>%
+### 5 - More cleaning that may alter original data ----
+
+scot_data %<>%
+  
   mutate(
 
     # Fill in GCS with AVPU
     daily_gcs_vsorres = case_when(
-      is.na(daily_gcs_vsorres) &
-        avpu_vsorres == "Alert" ~ 15,
-      is.na(daily_gcs_vsorres) &
-        avpu_vsorres == "Verbal" ~ 12,
-      is.na(daily_gcs_vsorres) &
-        avpu_vsorres == "Pain" ~ 9,
-      is.na(daily_gcs_vsorres) &
-        avpu_vsorres == "Unresponsive" ~ 3,
+      is.na(daily_gcs_vsorres) & avpu_vsorres == "Alert" ~ 15,
+      is.na(daily_gcs_vsorres) & avpu_vsorres == "Verbal" ~ 12,
+      is.na(daily_gcs_vsorres) & avpu_vsorres == "Pain" ~ 9,
+      is.na(daily_gcs_vsorres) & avpu_vsorres == "Unresponsive" ~ 3,
       TRUE ~ daily_gcs_vsorres
     ),
 
     # Collapse smoking to active smokers
-    smoking_mhyn_2levels = fct_collapse(smoking_mhyn,
-      NO = c("Never Smoked", "Former Smoker"),
-      YES = "Yes"
-    ) %>%
-      factor() %>%
-      ff_label("Smoking"),
+    smoking_mhyn_2levels = case_when(
+      smoking_mhyn %in% c("Never Smoked", "Former Smoker") ~ "NO",
+      smokin_mhyn == "Yes" ~ "YES"
+    ),
 
     daily_pt_lborres_add_inr = case_when(
-      is.na(daily_pt_lborres) & !is.na(daily_inr_lborres) ~ (daily_inr_lborres * 12),
+      is.na(daily_pt_lborres) & !is.na(daily_inr_lborres) ~ 
+        (daily_inr_lborres * 12),
       TRUE ~ daily_pt_lborres
-    ) %>%
-      ff_label("PT")
+    )
   )
 
 
-# Dataset and variable definitions 3 -------------------------------------------------------------
-## Define the existence of ANY occurence across EVENTS
-## Others to be moved to here from TREATMENT object code
-scot_data <- scot_data %>%
+### 6 - Add various flags ----
+
+scot_data %<>%
+  
+  # Add flag if any record of ICU admission
   group_by(subjid) %>%
-  mutate(
-    any_icu = case_when(
-      any(daily_hoterm == "Yes") | any(icu_hoterm == "Yes") ~ "Yes",
-      all(is.na(daily_hoterm), is.na(icu_hoterm)) ~ NA_character_,
-      TRUE ~ "No"
+  mutate(any_icu = case_when(
+    any(daily_hoterm == "Yes") | any(icu_hoterm == "Yes") ~ "Yes",
+    all(is.na(daily_hoterm), is.na(icu_hoterm)) ~ NA_character_,
+    TRUE ~ "No"
+  )) %>%
+  ungroup() %>%
+  
+  # Add flag for Day 1 data
+  mutate(topline = case_when(
+    str_detect(redcap_event_name, "^Day 1 ") & 
+      is.na(redcap_repeat_instrument) ~ 1,
+    TRUE ~ 0
+  )) %>%
+  
+  # Add flag for patients submitted >= 14 days ago
+  group_by(subjid) %>%
+  mutate(keep_14 = case_when(
+    any(
+      (Sys.Date() - hostdat) %>% as.numeric() %>% {. >= 14}, 
+      na.rm = TRUE) ~ 1,
+    TRUE ~ 0
+  )) %>%
+  
+  # Add flag for patients admitted >= 14 days, but <= 28 days
+  mutate(keep_14_28 = case_when(
+    any(
+      (Sys.Date() - hostdat) %>% as.numeric() %>% {. >= 14 & . <= 28},
+      na.rm = TRUE) ~ 1,
+    TRUE ~ 0
     )
   ) %>%
-  ungroup() %>%
-  mutate(any_icu = factor(any_icu)) %>%
-  ff_relabel(vlabels)
-
-# Topline is Day 1 data -----------------------------------------------------------------------------
-topline <- scot_data %>%
-  filter(redcap_event_name == "Day 1 Hospital Admission (Arm 1: TIER 0)" |
-    redcap_event_name == "Day 1 Hospital&ICU Admission (Arm 2: TIER 1)" |
-    redcap_event_name == "Day 1 (Arm 3: TIER 2)") %>%
-  filter(is.na(redcap_repeat_instrument)) %>%
-  ff_relabel(vlabels)
+  ungroup()
 
 
-# Define subsets --------------------------------------------------------------------------------
-## These can be used via: filter(subjid %in% keep_14)
-## Patients admitted >= 14 days ago.
-keep_14 <- scot_data %>%
-  mutate(
-    keep = (Sys.Date() - hostdat) %>% # Difference between admission and current date
-      as.numeric() %>% {
-        . >= 14
-      } # keep = time_from_admission >=14
-  ) %>%
-  drop_na(hostdat) %>% # Can't keep if hostdat missing, also drops >day 1 sheets
-  filter(keep) %>%
-  pull(subjid)
-
-# Patients admitted >= 14 days but <= 28 days
-keep_14_28 <- scot_data %>%
-  mutate(keep = (Sys.Date() - hostdat) %>%
-    as.numeric() %>% {
-      . >= 14 & . <= 28
-    }) %>%
-  drop_na(hostdat) %>%
-  filter(keep) %>%
-  pull(subjid)
-
-
-### * - Save cleaned data ----
+### 7 - Save cleaned data ----
 
 write_rds(
   scot_data,

@@ -81,7 +81,6 @@ scot_data %<>%
 ### 4 - General data cleaning ----
 
 # Dates
-
 scot_data %<>%
   
   mutate(
@@ -101,8 +100,8 @@ scot_data %<>%
     
   )
 
-# Age - TO DO - add to all records for subjid
 
+# Age
 scot_data %<>%
   
   mutate(
@@ -115,11 +114,20 @@ scot_data %<>%
       !is.na(dsstdat) ~ dsstdat  # enrolement date
     ),
     
-    age = case_when(
-      !is.na(agedat) ~ floor(time_length(interval(agedat, anydat), "days")),
-      age_estimateyearsu == "Months" ~ as.numeric(age_estimateyears) / 12,
-      TRUE ~ as.numeric(age_estimateyears)
-      ),
+    # Calculate age using DOB and anydat derived above
+    age = interval(agedat, anydat) %>%
+      as.period() %>%
+      year(),
+    
+    # Add infants to age variable by making months a fraction of year
+    age_estimateyears = as.numeric(age_estimateyears),
+    age_estimateyears = ifelse(age_estimateyearsu == "Months", 
+                               age_estimateyears / 12, 
+                               age_estimateyears),
+    
+    # Where DOB missing, use age_estimateyears
+    age = ifelse(is.na(agedat), age_estimateyears, age) %>%
+      ff_label("Age on admission (years)"),
     
     age.factor = case_when(
       age < 10 ~ "<10",
@@ -136,40 +144,38 @@ scot_data %<>%
     
   )
 
+
+# Continuous variables
+scot_data %<>%
+
   mutate_at(
 
-    ## Continuous variables made numeric ---------------------------------------
-    # This continues to need care.
-    # Unfortunately database did not validate numeric entries, so these are messy and include units.
-    # Some continuous variables UNITS ARE NOT YET CORRECTED, see next section for those that are.
-    # Always check distributions with histograms and add corrections as we go.
-
-    # 1. Remove all text, punctuation (except decimal places) and white space.
-    # 2. Convert to numeric
-
+    # Remove text/punctuation/etc and convert to numeric
     vars(
       temp_vsorres, hr_vsorres, rr_vsorres,
       sysbp_vsorres, admission_diabp_vsorres,
       oxy_vsorres, daily_fio2_lborres, daily_sao2_lborres,
-      daily_pao2_lborres, daily_pco2_lborres, daily_ph_lborres, daily_hco3_lborres, daily_baseex_lborres,
+      daily_pao2_lborres, daily_pco2_lborres, daily_ph_lborres, 
+      daily_hco3_lborres, daily_baseex_lborres,
       daily_gcs_vsorres,
       systolic_vsorres, diastolic_vsorres, daily_meanart_vsorres,
       daily_urine_lborres,
-      daily_hb_lborres, daily_wbc_lborres, daily_lymp_lborres, daily_neutro_lborres,
-      daily_haematocrit_lborres, daily_plt_lborres,
+      daily_hb_lborres, daily_wbc_lborres, daily_lymp_lborres, 
+      daily_neutro_lborres, daily_haematocrit_lborres, daily_plt_lborres,
       daily_aptt_lborres, daily_pt_lborres, daily_inr_lborres,
       daily_alt_lborres, daily_bil_lborres, daily_ast_lborres,
       daily_glucose_lborres,
       daily_bun_lborres, daily_lactate_lborres, daily_ldh_lborres,
       daily_creat_lborres,
-      daily_sodium_lborres, daily_potassium_lborres, daily_procal_lborres, daily_crp_lborres
+      daily_sodium_lborres, daily_potassium_lborres, daily_procal_lborres, 
+      daily_crp_lborres
     ),
     ~ as.character(.) %>% parse_number()
   ) %>%
+  
   mutate(
 
-    ## Units for continuous variables fixed here -------------------------
-    # Potassium has issues, this deals with some.
+    # Fix issues with units
     daily_potassium_lborres = case_when(
       daily_potassium_lborres > 100 ~ NA_real_,
       daily_potassium_lborres > 12 ~ daily_potassium_lborres / 10,
@@ -177,65 +183,49 @@ scot_data %<>%
       TRUE ~ daily_potassium_lborres
     ),
 
-    # Hb
-    # Ignore the units variable as people have unfortunately just got it wrong :(
-    daily_hb_lborres = ifelse(daily_hb_lborres < 25, daily_hb_lborres * 10, daily_hb_lborres),
+    daily_hb_lborres = ifelse(
+      daily_hb_lborres < 25, 
+      daily_hb_lborres * 10, 
+      daily_hb_lborres),
 
-    # WBC
-    # Units do not help here either.
-    # We couldn't be sure that those with WBC>100 were definitely factor of 10 wrong or leukaemia.
-    # Spent some time matching up lymph and neut counts, but thought easiest to exclude
-    daily_wbc_lborres = ifelse(daily_wbc_lborres > 100, NA_real_, daily_wbc_lborres),
+    daily_wbc_lborres = ifelse(
+      daily_wbc_lborres > 100, 
+      NA_real_, 
+      daily_wbc_lborres),
 
-    # Neutrophils
-    daily_neutro_lborres = ifelse(daily_neutro_lborres > 100, daily_neutro_lborres / 1000,
+    daily_neutro_lborres = ifelse(
+      daily_neutro_lborres > 100, 
+      daily_neutro_lborres / 1000,
       daily_neutro_lborres
     ),
 
-
-    # Lymphocytes needs looking at: most are x10^9, but some are x10^6
-    daily_lymp_lborres = ifelse(daily_lymp_lborres > 100, daily_lymp_lborres / 1000,
+    daily_lymp_lborres = ifelse(
+      daily_lymp_lborres > 100, 
+      daily_lymp_lborres / 1000,
       daily_lymp_lborres
     ),
 
-    # Platelets
-    # Units don't help
-    # Few very high have been left in as couldn't be sure not sepsis-related thrombocytosis
-
-    # PT/INR
-    # Some PTs are actually INRs
-    daily_pt_lborres = ifelse(daily_pt_lborres < 9, daily_pt_lborres * 12, daily_pt_lborres),
-    # No good way combining INR so consider using a threshold for abnormal
-    # See below for new variable based on INR 1.0 = PT 12.0
-
-    # Bilirubin
-    # Don't use daily_bil_lborresu variable as looks incorrect for all daily_bil_lborres values
-
-    # Urea
-    # Urea values in different units can't be differentiated by eye.
-    # We changed urea values on basis of units, but wonder if the mg/dL unit has been used incorrectly
-    # No pattern across hospitals for units being different.
-    # Decided to leave original values unchanged.
-    # daily_bun_lborres = ifelse(daily_bun_lborresu == "mg/dL", daily_bun_lborres * 2.8,
-    #                            daily_bun_lborres),
-
-    # Creatinine
-    # Ignore units variable, mg/dL values are not in the expected range for this unit.
-    # Some high values are left in on the presumption they may be correct.
-
-    # Glucose
-    daily_glucose_lborres = ifelse(daily_glucose_lborres > 100, NA_real_, daily_glucose_lborres),
-
-    # pO2
-    daily_pao2_lborres = ifelse(daily_pao2_lborresu == "mmHg", daily_pao2_lborres / 7.5,
+    daily_pt_lborres = ifelse(
+      daily_pt_lborres < 9, 
+      daily_pt_lborres * 12, 
+      daily_pt_lborres),
+    
+    daily_glucose_lborres = ifelse(
+      daily_glucose_lborres > 100, 
+      NA_real_, 
+      daily_glucose_lborres),
+    
+    daily_pao2_lborres = ifelse(
+      daily_pao2_lborresu == "mmHg", 
+      daily_pao2_lborres / 7.5,
       daily_pao2_lborres
     ),
 
-    # Lactate
-    # Some very high numbers removed. Patient at 47 died and left in, presumed real.
-    daily_lactate_lborres = ifelse(daily_lactate_lborres > 100, NA_real_, daily_lactate_lborres),
+    daily_lactate_lborres = ifelse(
+      daily_lactate_lborres > 100, 
+      NA_real_, 
+      daily_lactate_lborres),
 
-    # This may need looked at by hand. L/min have been included by the look of it.
     daily_fio2_lborres = case_when(
       daily_fio2_lborres <= 1 ~ daily_fio2_lborres, # Presume FiO2
       daily_fio2_lborres <= 2 ~ 0.24, # Presume these are all L/min
@@ -246,22 +236,35 @@ scot_data %<>%
       daily_fio2_lborres <= 10 ~ 0.50,
       daily_fio2_lborres <= 15 ~ 0.70,
       TRUE ~ daily_fio2_lborres
-    ),
+    )
+  )
 
-    ## Checkbox recodes here ---------------------------------------------
-    ethnicity = case_when(
-      ethnic___1 == "Checked" ~ "Arab",
-      ethnic___2 == "Checked" ~ "Black",
-      ethnic___3 == "Checked" ~ "East Asian",
-      ethnic___4 == "Checked" ~ "South Asian",
-      ethnic___5 == "Checked" ~ "West Asian",
-      ethnic___6 == "Checked" ~ "Latin American",
-      ethnic___7 == "Checked" ~ "White",
-      ethnic___8 == "Checked" ~ "Aboriginal/First Nations",
-      ethnic___9 == "Checked" ~ "Other"
-    ) %>%
-      factor() %>%
-      ff_label("Ethnicity")
+
+# Ethnicity
+
+scot_data %<>%
+  
+  mutate(
+    
+  ethnicity = case_when(
+    ethnic___1 == "Checked" ~ "Arab",
+    ethnic___2 == "Checked" ~ "Black",
+    ethnic___3 == "Checked" ~ "East Asian",
+    ethnic___4 == "Checked" ~ "South Asian",
+    ethnic___5 == "Checked" ~ "West Asian",
+    ethnic___6 == "Checked" ~ "Latin American",
+    ethnic___7 == "Checked" ~ "White",
+    ethnic___8 == "Checked" ~ "Aboriginal/First Nations",
+    ethnic___9 == "Checked" ~ "Other"
+  ),
+  
+  ethnicity_grouped = case_when(
+    ethnicity %in% c("East Asian", "South Asian", "West Asian") ~ "Asian",
+    ethnicity %in% 
+      c("Other", "Arab", "Latin American", "Aboriginal/First Nations") ~ "Other",
+    TRUE ~ ethnicity
+  )
+  
   )
 
 

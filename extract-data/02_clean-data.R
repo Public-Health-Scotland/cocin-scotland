@@ -344,7 +344,8 @@ write_rds(
   here("data", 
        paste0(latest_extract_date(),
               "_scot-data-clean.rds") 
-  )
+  ),
+  compress = "gz"
 )
 
 

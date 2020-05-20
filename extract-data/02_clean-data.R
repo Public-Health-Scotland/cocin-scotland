@@ -28,116 +28,99 @@ scot_data <-
   )
 
 
-# Labels -----------------------------------------------------------------------------------------
-## Tidyverse functions deal inconsistenly with variable label attributes.
-## Extract them here as object vlabels.
-## Apply at any time labels needed using: ff_relabel(vlabels)
-vlabels <- scot_data %>%
+### 2 - Fix RedCap variables ----
+
+# Fix for day 1 tier 1 repeating daily form 
+# This was an error in the REDCap specification.
+# The daily form should only appear once per event, but here it is a repeating instrument
+# 1. Change redcap event name for repeated forms so they are not duplicated
+# 2. Mark redcap_repeat_instance and redcap_repeat_instrument as NA
+# For repeating forms, rewrite redcap_event_name for the day corresponding with the instance.
+# This does not use date, only instance.
+# This may conflict if daily forms completed in other event with same name, i.e. Day 3.
+
+scot_data %<>%
   mutate(
-    age = NA %>%
-      ff_label("Age on admission (years)"),
-    age.factor = NA %>%
-      ff_label("Age on admission (years)"),
-    mort = NA %>%
-      ff_label("Mortality")
-  ) %>%
-  extract_variable_label()
-
-####
-
-
-# Fix for day 1 tier 1 repeating daily form ---------------------------------------------------------
-## This was an error in the REDCap specification.
-## The daily form should only appear once per event, but here it is a repeating instrument
-## 1. Change redcap event name  for repeated forms so they are not duplicated
-## 2. Mark redcap_repeat_instance and redcap_repeat_instrument NA
-scot_data <- scot_data %>%
-  mutate(
-    # For repeating forms, rewrite redcap_event_name for the day corresponding with the instance.
-    # This does not use date, only instance.
-    # This may conflict if daily forms completed in other event with same name, i.e. Day 3.
-
+    
     # Rows to update
-    mark_to_change = if_else(redcap_event_name == "Day 1 Hospital&ICU Admission (Arm 2: TIER 1)" &
-      redcap_repeat_instrument == "Daily Form",
-    TRUE, FALSE, FALSE
+    mark_to_change = if_else(
+      redcap_event_name == "Day 1 Hospital&ICU Admission (Arm 2: TIER 1)" &
+        redcap_repeat_instrument == "Daily Form",
+      TRUE, FALSE, FALSE
     ),
 
     # Change to character as factor causes issues
     redcap_event_name = as.character(redcap_event_name),
     redcap_repeat_instrument = as.character(redcap_repeat_instrument),
-
-    # Make change
+    
+    # Change event name
     redcap_event_name = ifelse(mark_to_change,
-      paste0(
-        "Day ", redcap_repeat_instance + 1,
-        " Hospital&ICU Admission (Arm 2: TIER 1)"
-      ),
-      redcap_event_name
+                               paste0(
+                                 "Day ", redcap_repeat_instance + 1,
+                                 " Hospital&ICU Admission (Arm 2: TIER 1)"
+                               ),
+                               redcap_event_name
     ),
+    
     # Set redcap_repeat_instrument and redcap_repeat_instance to NA as they would be normally.
     redcap_repeat_instance = ifelse(mark_to_change, NA, redcap_repeat_instance),
-    redcap_repeat_instrument = ifelse(mark_to_change, NA, redcap_repeat_instrument),
-    mark_to_change = NULL
-  )
+    redcap_repeat_instrument = ifelse(mark_to_change, NA, redcap_repeat_instrument)
+  ) %>%
+  
+  select(-mark_to_change)
 
 
-# Remove those patients marked definite "no" on final form-----------------------------------------
-## This needs kept under review.
-## Note also "probable" level here, these are not excluded.
-## Need to check daily infectious disease diagnosis forms to ensure no positives.
-## Small number removed here.
-definite_no_subjid <- scot_data %>%
-  filter(corna_mbcat == "NO") %>%
-  pull(subjid)
+### 3 - Remove subjects with no coronavirus diagnosis ----
 
-scot_data <- scot_data %>%
-  filter(!subjid %in% definite_no_subjid)
+scot_data %<>%
+  group_by(subjid) %>%
+  filter(!any(corna_mbcat == "NO", na.rm = TRUE)) %>%
+  ungroup()
 
 
-# Dataset and variable definitions -----------------------------------------------------------------
-## Main cleaning applied here
-scot_data <- scot_data %>%
-  remove_labels() %>%
+### 4 - General data cleaning ----
+
+# Dates
+
+scot_data %<>%
+  
   mutate(
-
-    ## Dates ----------------------------------------------------------------
+    
     # If admission date missing, use daily sheet 1 date if available
     hostdat = case_when(
-      (redcap_event_name == "Day 1 Hospital Admission (Arm 1: TIER 0)" |
-        redcap_event_name == "Day 1 Hospital&ICU Admission (Arm 2: TIER 1)" |
-        redcap_event_name == "Day 1 (Arm 3: TIER 2)") &
-        is.na(hostdat) &
+      str_detect(redcap_event_name, "^Day 1") & 
+        is.na(hostdat) & 
         !is.na(daily_dsstdat) ~ daily_dsstdat,
       TRUE ~ hostdat
     ),
-
-    # Onset to admission
+    
+    # Calculate days between onset and admission
     onset2admission = (hostdat - cestdat) %>%
       as.numeric() %>%
-      ff_label("Onset to admission (days)"),
+      ff_label("Onset to admission (days)")
+    
+  )
 
-    ## Age specified here -------------------------------------------------
-    # Ensure any available form date is used so age is not missing
+# Age - TO DO - add to all records for subjid
+
+scot_data %<>%
+  
+  mutate(
+    
+    # Date at which to calculate age
     anydat = case_when(
-      !is.na(hostdat) ~ hostdat, # If admission date, use that
+      !is.na(hostdat) ~ hostdat, # Use admission date first, then,
       any(!is.na(daily_dsstdat)) ~ coalesce(daily_dsstdat), # first non-missing daily form across all forms
-      !is.na(cestdat) ~ cestdat, # onset
-      !is.na(dsstdat) ~ dsstdat
-    ), # enrolment
-
-    age = interval(agedat, anydat) %>%
-      as.period() %>% # if need exact stop here
-      year(),
-
-    # Add infants to age variable by making months a fraction of year
-    age_estimateyears = as.numeric(age_estimateyears),
-    age_estimateyears = ifelse(age_estimateyearsu == "Months", age_estimateyears / 12, age_estimateyears),
-
-    # DOB missing as no consent in some, therefore use age_estimateyears
-    age = ifelse(is.na(agedat), age_estimateyears, age) %>% # Note age_estimateyears is float
-      ff_label("Age on admission (years)"),
-
+      !is.na(cestdat) ~ cestdat, # onset date,
+      !is.na(dsstdat) ~ dsstdat  # enrolement date
+    ),
+    
+    age = case_when(
+      !is.na(agedat) ~ floor(time_length(interval(agedat, anydat), "days")),
+      age_estimateyearsu == "Months" ~ as.numeric(age_estimateyears) / 12,
+      TRUE ~ as.numeric(age_estimateyears)
+      ),
+    
     age.factor = case_when(
       age < 10 ~ "<10",
       age < 20 ~ "10-19",
@@ -149,10 +132,10 @@ scot_data <- scot_data %>%
       age < 80 ~ "70-79",
       is.na(age) ~ NA_character_,
       TRUE ~ "80+"
-    ) %>%
-      factor() %>%
-      ff_label("Age (years)")
-  ) %>%
+    )
+    
+  )
+
   mutate_at(
 
     ## Continuous variables made numeric ---------------------------------------

@@ -2,20 +2,32 @@
 .Rhistory
 .RData
 .Ruserdata
+
 # 'data' folder #
 data/
+output/
+
 # Common text files that may contain data #
 *.[cC][sS][vV]
 *.[tT][xX][tT]
+
 # Excel files #
 *.[xX][lL][sS]*
+
 # SPSS formats #
 *.[sS][aA][vV]
 *.[zZ][sS][aA][vV]
+
 # R data files #
 *.[rR][dD][aA][tT][aA]
 *.[rR][dD][sS]
 *.[rR][dD][sS].[gG][zZ]
+
 # MacOS folder attributes files #
 .DS_Store
-HB_table.html
+
+# Ignore PDF and html output files
+*.pdf
+*.html
+
+*.docx

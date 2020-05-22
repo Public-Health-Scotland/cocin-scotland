@@ -140,7 +140,7 @@ while (tries == 0 | (tries < 5 & inherits(extract, "try-error"))) {
 extract %<>%
   fix_bad_loc_codes()
 
-# Create scottish location lookup
+# Add in scottish hospitals 
 scot_locations <-
   
   # Extract Scottish hospital location codes

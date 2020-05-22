@@ -135,6 +135,38 @@ while (tries == 0 | (tries < 5 & inherits(extract, "try-error"))) {
   Sys.sleep(10)
 }
 
+# Fix bad location codes
+
+extract %<>%
+  fix_bad_loc_codes()
+
+# Create scottish location lookup
+scot_locations <-
+  
+  # Extract Scottish hospital location codes
+  read_csv(
+    paste0("https://www.opendata.nhs.scot/dataset/cbd1802e-0e04-4282-88eb-",
+           "d7bdcfb120f0/resource/c698f450-eeed-41a0-88f7-c1e40a568acc/",
+           "download/current_nhs_hospitals_in_scotland_200420.csv")
+  ) %>%
+  
+  # Extract health board names and join
+  left_join(
+    read_csv(
+      paste0("https://www.opendata.nhs.scot/dataset/9f942fdb-e59e-44f5-",
+             "b534-d6e17229cc7b/resource/f177be64-e94c-4ddf-a2ee-ea58d648d55a/",
+             "download/hb2019_codes_and_labels_21042020.csv")
+    ),
+    by = "HB"
+  ) %>%
+  
+  clean_names()
+
+# Match lookup to CoCIN extract
+extract %<>%
+  mutate(hospid = str_sub(subjid, end = 5)) %>%
+  left_join(scot_locations, by = c("hospid" = "location"))
+
 
 ### 3 - Run factor/label code ----
 

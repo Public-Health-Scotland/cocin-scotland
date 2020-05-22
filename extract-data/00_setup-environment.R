@@ -24,6 +24,7 @@ library(magrittr)
 library(stringr)
 library(here)
 library(fs)
+library(REDCapR)
 
 
 ### 2 - Load functions ---

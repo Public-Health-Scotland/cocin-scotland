@@ -18,7 +18,7 @@
 source("extract-data/00_setup-environment.R")
 
 
-### 1 - Extract data from RedCap via API ----
+### 1 - Extract patient id data from RedCap via API ----
 
 # Enter API Token
 Sys.setenv(
@@ -27,6 +27,7 @@ Sys.setenv(
       title = "Enter API token",
       message = "API token:"
     ))
+
 
 # Call API allowing for up to 5 tries 
 tries <- 0
@@ -42,19 +43,13 @@ while (tries == 0 | (tries < 5 & inherits(extract, "try-error"))) {
   }
   
   print(tries)
-  extract <- try(postForm(
-    uri = "https://ncov.medsci.ox.ac.uk/api/",
-    token = Sys.getenv("ccp_token"),
-    content = "record",
-    format = "csv",
-    type = "flat",
-    rawOrLabel = "raw",
-    rawOrLabelHeaders = "raw",
-    exportCheckboxLabel = "false",
-    exportSurveyFields = "false",
-    exportDataAccessGroups = "true",
-    returnFormat = "json"
-  ))
+  extract <- try(extract <- redcap_read(
+    redcap_uri  = "https://ncov.medsci.ox.ac.uk/api/",
+    export_data_access_groups = TRUE,
+    token       = ccp_token,
+    fields      = 'subjid',
+  )$data
+  )
   tries <- tries + 1
   Sys.sleep(10)
 }
@@ -111,6 +106,34 @@ scot_dag <-
 extract %<>%
   filter(redcap_data_access_group %in% scot_dag |
            !is.na(location_name))
+
+## Download COCIN data for all Scottish patients
+
+scotpat <-  unique(extract$subjid)
+
+# Call API allowing for up to 5 tries 
+tries <- 0
+extract <- NA
+
+## Note - need to come off the VPN connection for the below 
+while (tries == 0 | (tries < 5 & inherits(extract, "try-error"))) {
+  
+  # Avoid using the API on the hour as this is when a lot of reports refresh
+  while (minute(Sys.time()) %in% c(59, 0:5)) {
+    message("Waiting till after the hour to avoid overloading the API")
+    Sys.sleep(30)
+  }
+  
+  print(tries)
+  extract <- redcap_read(
+    redcap_uri  = "https://ncov.medsci.ox.ac.uk/api/",
+    export_data_access_groups = TRUE,
+    token       = ccp_token,
+    records = scotpat
+  )$data
+  tries <- tries + 1
+  Sys.sleep(10)
+}
 
 
 ### 3 - Run factor/label code ----

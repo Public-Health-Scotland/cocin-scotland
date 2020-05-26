@@ -46,7 +46,7 @@ while (tries == 0 | (tries < 5 & inherits(extract, "try-error"))) {
   extract <- try(extract <- redcap_read(
     redcap_uri  = "https://ncov.medsci.ox.ac.uk/api/",
     export_data_access_groups = TRUE,
-    token       = ccp_token,
+    token       = Sys.getenv("ccp_token"),
     fields      = 'subjid',
   )$data
   )
@@ -128,7 +128,7 @@ while (tries == 0 | (tries < 5 & inherits(extract, "try-error"))) {
   extract <- redcap_read(
     redcap_uri  = "https://ncov.medsci.ox.ac.uk/api/",
     export_data_access_groups = TRUE,
-    token       = ccp_token,
+    token       = Sys.getenv("ccp_token"),
     records = scotpat
   )$data
   tries <- tries + 1

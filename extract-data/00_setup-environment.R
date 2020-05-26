@@ -13,7 +13,6 @@
 
 ### 1 - Load packages ----
 
-library(RCurl)
 library(tidyverse)
 library(lubridate)
 library(finalfit)

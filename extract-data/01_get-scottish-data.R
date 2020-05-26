@@ -83,7 +83,8 @@ scot_locations <-
         "download/hb2019_codes_and_labels_21042020.csv"
       ),
       col_types = cols_only(
-        HB = col_character()
+        HB = col_character(),
+        HBName = col_character()
       )
     ),
     by = "HB"
@@ -134,6 +135,9 @@ while (tries == 0 | (tries < 5 & inherits(extract, "try-error"))) {
   tries <- tries + 1
   Sys.sleep(10)
 }
+
+# Record extract time
+extract_date <- Sys.time()
 
 # Fix bad location codes
 extract %<>%

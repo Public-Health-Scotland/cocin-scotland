@@ -286,7 +286,7 @@ scot_data %<>%
     # Collapse smoking to active smokers
     smoking_mhyn_2levels = case_when(
       smoking_mhyn %in% c("Never Smoked", "Former Smoker") ~ "NO",
-      smokin_mhyn == "Yes" ~ "YES"
+      smoking_mhyn == "Yes" ~ "YES"
     ),
 
     daily_pt_lborres_add_inr = case_when(

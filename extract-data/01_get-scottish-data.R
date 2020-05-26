@@ -57,10 +57,6 @@ while (tries == 0 | (tries < 5 & inherits(extract, "try-error"))) {
 
 ### 2 - Select Scottish data ----
 
-# Fix bad location codes
-extract %<>%
-  fix_bad_loc_codes()
-
 # Create scottish location lookup
 scot_locations <-
   

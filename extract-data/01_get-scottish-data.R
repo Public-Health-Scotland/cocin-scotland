@@ -22,11 +22,12 @@ source("extract-data/00_setup-environment.R")
 
 # Enter API Token
 Sys.setenv(
-  ccp_token = 
+  ccp_token =
     rstudioapi::showPrompt(
       title = "Enter API token",
       message = "API token:"
-    ))
+    )
+)
 
 
 # Call API allowing for up to 5 tries 
@@ -44,47 +45,47 @@ while (tries == 0 | (tries < 5 & inherits(extract, "try-error"))) {
   
   print(tries)
   extract <- try(extract <- redcap_read(
-    redcap_uri  = "https://ncov.medsci.ox.ac.uk/api/",
+    redcap_uri = "https://ncov.medsci.ox.ac.uk/api/",
     export_data_access_groups = TRUE,
-    token       = ccp_token,
-    fields      = 'subjid',
-  )$data
-  )
+    token = Sys.getenv("ccp_token"),
+    fields = "subjid"
+  )$data)
   tries <- tries + 1
   Sys.sleep(10)
 }
 
-# Read csv extract
-if (class(extract) == "character") {
-  extract <- read_csv(extract, na = "", guess_max = 20000)
-  extract_date <- Sys.time()
-} else {
-  warning("Something went wrong with the extract")
-}
-
 
 ### 2 - Select Scottish data ----
-
-# Fix bad location codes
-extract %<>%
-  fix_bad_loc_codes()
 
 # Create scottish location lookup
 scot_locations <-
   
   # Extract Scottish hospital location codes
   read_csv(
-    paste0("https://www.opendata.nhs.scot/dataset/cbd1802e-0e04-4282-88eb-",
-           "d7bdcfb120f0/resource/c698f450-eeed-41a0-88f7-c1e40a568acc/",
-           "download/current_nhs_hospitals_in_scotland_200420.csv")
+    paste0(
+      "https://www.opendata.nhs.scot/dataset/cbd1802e-0e04-4282-88eb-",
+      "d7bdcfb120f0/resource/c698f450-eeed-41a0-88f7-c1e40a568acc/",
+      "download/current_nhs_hospitals_in_scotland_200420.csv"
+    ),
+    col_types = cols_only(
+      Location = col_character(),
+      LocationName = col_character(),
+      HB = col_character()
+    )
   ) %>%
   
   # Extract health board names and join
   left_join(
     read_csv(
-      paste0("https://www.opendata.nhs.scot/dataset/9f942fdb-e59e-44f5-",
-             "b534-d6e17229cc7b/resource/f177be64-e94c-4ddf-a2ee-ea58d648d55a/",
-             "download/hb2019_codes_and_labels_21042020.csv")
+      paste0(
+        "https://www.opendata.nhs.scot/dataset/9f942fdb-e59e-44f5-",
+        "b534-d6e17229cc7b/resource/f177be64-e94c-4ddf-a2ee-ea58d648d55a/",
+        "download/hb2019_codes_and_labels_21042020.csv"
+      ),
+      col_types = cols_only(
+        HB = col_character(),
+        HBName = col_character()
+      )
     ),
     by = "HB"
   ) %>%
@@ -105,11 +106,11 @@ scot_dag <-
 # Select CoCIN records 
 extract %<>%
   filter(redcap_data_access_group %in% scot_dag |
-           !is.na(location_name))
+    !is.na(location_name))
 
 ## Download COCIN data for all Scottish patients
 
-scotpat <-  unique(extract$subjid)
+scotpat <- unique(extract$subjid)
 
 # Call API allowing for up to 5 tries 
 tries <- 0
@@ -126,41 +127,22 @@ while (tries == 0 | (tries < 5 & inherits(extract, "try-error"))) {
   
   print(tries)
   extract <- redcap_read(
-    redcap_uri  = "https://ncov.medsci.ox.ac.uk/api/",
+    redcap_uri = "https://ncov.medsci.ox.ac.uk/api/",
     export_data_access_groups = TRUE,
-    token       = ccp_token,
+    token = Sys.getenv("ccp_token"),
     records = scotpat
   )$data
   tries <- tries + 1
   Sys.sleep(10)
 }
 
-# Fix bad location codes
+# Record extract time
+extract_date <- Sys.time()
 
+# Fix bad location codes
 extract %<>%
   fix_bad_loc_codes()
 
-# Add in scottish hospitals 
-scot_locations <-
-  
-  # Extract Scottish hospital location codes
-  read_csv(
-    paste0("https://www.opendata.nhs.scot/dataset/cbd1802e-0e04-4282-88eb-",
-           "d7bdcfb120f0/resource/c698f450-eeed-41a0-88f7-c1e40a568acc/",
-           "download/current_nhs_hospitals_in_scotland_200420.csv")
-  ) %>%
-  
-  # Extract health board names and join
-  left_join(
-    read_csv(
-      paste0("https://www.opendata.nhs.scot/dataset/9f942fdb-e59e-44f5-",
-             "b534-d6e17229cc7b/resource/f177be64-e94c-4ddf-a2ee-ea58d648d55a/",
-             "download/hb2019_codes_and_labels_21042020.csv")
-    ),
-    by = "HB"
-  ) %>%
-  
-  clean_names()
 
 # Match lookup to CoCIN extract
 extract %<>%
@@ -181,8 +163,10 @@ rm(data)
 # Data extract
 write_rds(
   extract,
-  here("data", paste0(format(extract_date, "%Y-%m-%d_%H-%M"), 
-                      "_scot-data.rds")),
+  here("data", paste0(
+    format(extract_date, "%Y-%m-%d_%H-%M"),
+    "_scot-data.rds"
+  )),
   compress = "gz"
 )
 
@@ -190,8 +174,10 @@ write_rds(
 write_csv(
   extract %>%
     count(hb_name, redcap_data_access_group, hospid, location_name),
-  here("data", paste0(format(extract_date, "%Y-%m-%d_%H-%M"), 
-                      "_scot-record-summary.csv"))
+  here("data", paste0(
+    format(extract_date, "%Y-%m-%d_%H-%M"),
+    "_scot-record-summary.csv"
+  ))
 )
 
 

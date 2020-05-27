@@ -46,18 +46,22 @@ rapid <- rapid %>%
 # Filter off as we find a sensible match
 
 # Find paitents who had a positive test during the stay and use that
+# Take the latest stay if needed
 test_in_stay <- rapid %>%
   filter((adm_date <= test_date & dis_date >= test_date)|
       (is.na(dis_date) & (test_date >= adm_date))
-  )
+  ) %>% 
+  arrange(desc(adm_date)) %>% 
+  distinct(chi_number, .keep_all = TRUE)
 
-# Find patients who had a positive test in the 1/2 days before admission
-# Maybe we should do this one last and increase the time
+# Find patients who had a positive test before an admision and take that patients latest admission
 test_before_stay <- rapid %>%
   anti_join(test_in_stay, by = "chi_number") %>%
-  filter((test_date < adm_date) & ((test_date + days(2)) >= adm_date))
+  filter((test_date < adm_date)) %>% 
+  arrange(desc(adm_date)) %>% 
+  distinct(chi_number, .keep_all = TRUE)
 
-# This is an odd group - was considering excluding these
+# Exclude any who have tested positive after the latest discharge we have for them
 test_after_dis <- rapid %>% 
   anti_join(test_in_stay, by = "chi_number") %>% 
   anti_join(test_before_stay, by = "chi_number") %>% 
@@ -65,15 +69,16 @@ test_after_dis <- rapid %>%
   filter(test_date > max(dis_date)) %>% 
   ungroup()
 
-# See what we have
+# See what we have - should be no records left
 rapid %>% 
   anti_join(test_in_stay, by = "chi_number") %>% 
   anti_join(test_before_stay, by = "chi_number") %>% 
   anti_join(test_after_dis, by = "chi_number") %>%
   View()
 
-# Other thoughts for filtering is to use diag codes and look for
-# U071 (Emergency code for COVID) or B342 (Code for COVID)
+# Create a dataset of single admission per CHI
+covid_admissions <- bind_rows(test_in_stay, test_before_stay)
 
-# Last thought would be to pick the longest, closest stay to the test date
+
+  
 

@@ -13,7 +13,6 @@
 
 ### 1 - Load packages ----
 
-library(RCurl)
 library(tidyverse)
 library(lubridate)
 library(finalfit)
@@ -24,6 +23,7 @@ library(magrittr)
 library(stringr)
 library(here)
 library(fs)
+library(REDCapR)
 
 
 ### 2 - Load functions ---

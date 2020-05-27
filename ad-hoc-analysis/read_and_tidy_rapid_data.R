@@ -3,7 +3,7 @@ library(dplyr)
 library(lubridate)
 
 # Read data emailed from Bob
-rapid <- read_rds("rapid_ecoss_joined.rds") %>%
+rapid <- read_rds(here("data", "rapid_ecoss_joined.rds")) %>%
   select(
     chi_number,
     age_year,

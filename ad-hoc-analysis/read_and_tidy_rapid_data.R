@@ -77,3 +77,24 @@ rapid %>%
 
 # Create a dataset of single admission per CHI
 covid_admissions <- bind_rows(test_in_stay, test_before_stay)
+
+# Read COCIN data
+cocin <- read_rds(here("data", "2020-05-26_11-52_scot-data-clean.rds"))
+
+# Create completness per hospital
+hosp_completeness <- full_join(
+  cocin %>%
+    distinct(subjid, hospid) %>%
+    count(hospid),
+  covid_admissions %>%
+    count(hospital_of_treatment_code),
+  by = c("hospid" = "hospital_of_treatment_code")
+) %>%
+  rename(
+    cocin_patients = n.x,
+    rapid_patients = n.y
+  ) %>%
+  mutate(
+    cocin_patients = if_else(is.na(cocin_patients), 0L, cocin_patients),
+    pct_complete = cocin_patients / rapid_patients * 100
+  )

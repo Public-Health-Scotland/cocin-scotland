@@ -33,6 +33,8 @@ rapid <- rapid %>%
     adm_date = min(admission_date),
     dis_date = max(discharge_date),
     test_date = first(specimen_date),
+    age = first(age_year),
+    sex = first(sex),
     dis1 = last(na.omit(diagnosis_1_code_4_char)),
     dis2 = last(na.omit(diagnosis_2_code_4_char)),
     dis3 = last(na.omit(diagnosis_3_code_4_char)),
@@ -98,3 +100,79 @@ hosp_completeness <- full_join(
     cocin_patients = if_else(is.na(cocin_patients), 0L, cocin_patients),
     pct_complete = cocin_patients / rapid_patients * 100
   )
+
+# Create completeness by age
+age_completness <- 
+  full_join(
+    cocin %>%
+      group_by(subjid) %>% 
+      summarise(age = first(na.omit(age))) %>% 
+      mutate(
+        age.factor = case_when(
+          age < 17 ~ "<17",
+          age < 30 ~ "17-29",
+          age < 40 ~ "30-39",
+          age < 50 ~ "40-49",
+          age < 60 ~ "50-59",
+          age < 70 ~ "60-69",
+          age < 80 ~ "70-79",
+          is.na(age) ~ NA_character_,
+          TRUE ~ "80+"
+        )
+      ) %>% 
+      count(age.factor),
+    covid_admissions %>%
+      mutate(
+        age.factor = case_when(
+          age < 17 ~ "<17",
+          age < 30 ~ "17-29",
+          age < 40 ~ "30-39",
+          age < 50 ~ "40-49",
+          age < 60 ~ "50-59",
+          age < 70 ~ "60-69",
+          age < 80 ~ "70-79",
+          is.na(age) ~ NA_character_,
+          TRUE ~ "80+"
+        )
+      ) %>% 
+      count(age.factor),
+    by = c("age.factor")
+  ) %>%
+  rename(
+    cocin_patients = n.x,
+    rapid_patients = n.y
+  ) %>%
+  mutate(
+    cocin_patients = if_else(is.na(cocin_patients), 0L, cocin_patients),
+    pct_complete = cocin_patients / rapid_patients * 100
+  )
+
+
+# Create completeness by sex
+sex_completness <- 
+  full_join(
+    cocin %>%
+      group_by(subjid) %>% 
+      summarise(sex = as.numeric(first(na.omit(sex)))) %>% 
+      count(sex),
+    covid_admissions %>%
+      mutate(sex = case_when(sex == "M" ~ 1,
+                             sex == "F" ~ 2)) %>% 
+      count(sex),
+    by = c("sex")
+  ) %>%
+  rename(
+    cocin_patients = n.x,
+    rapid_patients = n.y
+  ) %>%
+  mutate(
+    cocin_patients = if_else(is.na(cocin_patients), 0L, cocin_patients),
+    pct_complete = cocin_patients / rapid_patients * 100
+  )
+
+## Todo 
+# Make breakdown of hospital per ISO week per sex and pead/ adult/ old
+# Last weeks CHIs RAPID + ECOSS vs COCIN
+
+
+

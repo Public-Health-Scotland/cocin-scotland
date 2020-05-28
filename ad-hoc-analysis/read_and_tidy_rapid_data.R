@@ -2,7 +2,8 @@ library(readr)
 library(dplyr)
 library(lubridate)
 
-# Read data emailed from Bob
+# Read data found here: 
+# \\stats\PHSCOVID19_Analysis\RAPID Reporting\Daily_extracts
 rapid <- read_rds(here("data", "rapid_ecoss_joined.rds")) %>%
   select(
     chi_number,
@@ -81,7 +82,7 @@ rapid %>%
 covid_admissions <- bind_rows(test_in_stay, test_before_stay)
 
 # Read COCIN data
-cocin <- read_rds(here("data", "2020-05-26_11-52_scot-data-clean.rds"))
+cocin <- read_rds(str_glue("data/{date}_scot-data-clean.rds", date = latest_extract_date()))
 
 # Create completness per hospital
 hosp_completeness <- full_join(

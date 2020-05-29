@@ -84,12 +84,15 @@ symptom_data %>%
   )$p.value < 0.5,
   "Yes",
   "No"
-  )) %>% 
+  )) %>%
   mutate(direction = if_else(significant == "Yes",
-                             if_else(`prop_Before 30th April` > `prop_On or after 30th April`,
-                                     "decrease",
-                                     "increase"),
-                             NA_character_)) %>%
-  select(-starts_with("total")) %>% 
-  write_csv(str_glue("output/{date}_over70_symptom_comparison.csv", 
-                     date = latest_extract_date()))
+    if_else(`prop_Before 30th April` > `prop_On or after 30th April`,
+      "decrease",
+      "increase"
+    ),
+    NA_character_
+  )) %>%
+  select(-starts_with("total")) %>%
+  write_csv(str_glue("output/{date}_over70_symptom_comparison.csv",
+    date = latest_extract_date()
+  ))

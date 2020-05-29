@@ -40,22 +40,30 @@ topline <- scot_data %>%
     "Before 30th April",
     "On or after 30th April"
   ) %>%
-    as_factor())
+    as_factor()) %>%
+  left_join(scot_data %>%
+    filter_at(vars(fever_ceoccur_v2:bleed_ceoccur_v2), any_vars(. == "YES")) %>%
+    mutate(any_symptoms = "YES") %>%
+    select(subjid, any_symptoms),
+  by = "subjid"
+  ) %>%
+  mutate(any_symptoms = recode(any_symptoms, .missing = "NO"))
 
 
 symptom_data <- topline %>%
   pivot_longer(
-    cols = `Fever`:`Bleeding (Haemorrhage)`,
+    cols = c(Fever:`Bleeding (Haemorrhage)`, any_symptoms),
     names_to = "Symptom",
     values_to = "Status",
     values_drop_na = TRUE
   ) %>%
   mutate(Status = recode(Status, "YES" = "Yes", "NO" = "No")) %>%
   group_by(admission, Symptom) %>%
-  count(Status)
+  count(Status) %>%
+  ungroup()
 
 # Quick Graph
-symptom_data %>%
+sympt_bar_chart <- symptom_data %>%
   ggplot(aes(x = Symptom, y = n, fill = Status)) +
   geom_col(position = "fill") +
   theme_minimal() +
@@ -96,3 +104,79 @@ symptom_data %>%
   write_csv(str_glue("output/{date}_over70_symptom_comparison.csv",
     date = latest_extract_date()
   ))
+
+symp_data_levels_order <-
+  symptom_data %>%
+  filter(
+    Status == "Yes",
+    admission == "Before 30th April"
+  ) %>%
+  arrange(desc(n)) %>%
+  pull(Symptom)
+
+# UoE symptom plot
+uoe_sympt_plot <- symptom_data %>%
+  # Status a factor ordered by levels == Yes value
+  mutate(
+    Symptom = factor(Symptom, symp_data_levels_order),
+    Status = factor(Status, c("Yes", "Unknown", "No"))
+  ) %>%
+  ggplot(aes(x = fct_rev(Symptom), y = n, fill = fct_rev(Status))) +
+  geom_col(position = "fill") +
+  xlab("") +
+  scale_y_continuous("Proportion of patients with symptom (%)", labels = scales::percent) +
+  scale_fill_manual("", values = c("dark grey", "light grey", "black")) +
+  # scale_fill_brewer("", palette = "Paired", breaks = rev, direction = -1) +
+  coord_flip() +
+  theme_classic() +
+  theme(legend.position = "top") +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  facet_grid(cols = vars(admission))
+
+# UoE corr plot
+symp.cors_before <- topline %>%
+  filter(str_detect(admission, "Before")) %>%
+  select(-subjid, -age, -cestdat, -admission) %>%
+  mutate_all(as_factor) %>%
+  mutate_all(fct_recode, NULL = "Unknown") %>%
+  mutate_all(as.numeric) %>%
+  cor(use = "pairwise.complete.obs") %>%
+  .[, colSums(is.na(.)) != nrow(.)] %>%
+  .[rowSums(is.na(.)) != ncol(.), ]
+
+symp.cors_after <- topline %>%
+  filter(str_detect(admission, "On")) %>%
+  select(-subjid, -age, -cestdat, -admission) %>%
+  mutate_all(as_factor) %>%
+  mutate_all(fct_recode, NULL = "Unknown") %>%
+  mutate_all(as.numeric) %>%
+  cor(use = "pairwise.complete.obs") %>%
+  .[, colSums(is.na(.)) != nrow(.)] %>%
+  .[rowSums(is.na(.)) != ncol(.), ]
+symp.cors_after[is.na(symp.cors_after)] <- 0
+
+library(ggcorrplot)
+before_cor_plot <- symp.cors_before %>%
+  ggcorrplot(
+    hc.order = TRUE,
+    outline.color = "white",
+    colors = c("#6D9EC1", "white", "#E46726")
+  ) +
+  ggtitle("Before 30th April")
+
+after_cor_plot <- symp.cors_after %>%
+  ggcorrplot(
+    hc.order = TRUE,
+    outline.color = "white",
+    colors = c("#6D9EC1", "white", "#E46726")
+  ) +
+  ggtitle("On or after 30th April")
+
+library(gridExtra)
+ggsave("output/over70_symptom_plots.pdf", marrangeGrob(grobs = list(sympt_bar_chart,
+                                                                   uoe_sympt_plot,
+                                                                   before_cor_plot, 
+                                                                   after_cor_plot),
+                                                                   nrow = 1,
+                                                                   ncol = 1),
+       width = 10, height = 10)

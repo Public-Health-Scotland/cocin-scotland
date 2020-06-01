@@ -173,10 +173,15 @@ after_cor_plot <- symp.cors_after %>%
   ggtitle("On or after 30th April")
 
 library(gridExtra)
-ggsave("output/over70_symptom_plots.pdf", marrangeGrob(grobs = list(sympt_bar_chart,
-                                                                   uoe_sympt_plot,
-                                                                   before_cor_plot, 
-                                                                   after_cor_plot),
-                                                                   nrow = 1,
-                                                                   ncol = 1),
-       width = 10, height = 10)
+ggsave("output/over70_symptom_plots.pdf", marrangeGrob(
+  grobs = list(
+    sympt_bar_chart,
+    uoe_sympt_plot,
+    before_cor_plot,
+    after_cor_plot
+  ),
+  nrow = 1,
+  ncol = 1
+),
+width = 10, height = 10
+)

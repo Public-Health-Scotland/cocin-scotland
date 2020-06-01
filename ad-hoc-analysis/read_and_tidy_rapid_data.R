@@ -1,6 +1,6 @@
 source("extract-data/00_setup-environment.R")
 
-# Read data found here: 
+# Read data found here:
 # \\stats\PHSCOVID19_Analysis\RAPID Reporting\Daily_extracts
 linked_file_path <- path("//stats", "PHSCOVID19_Analysis", "RAPID Reporting", "Daily_extracts", "rapid_ecoss_joined.rds")
 if (vpn_active()) {
@@ -18,9 +18,9 @@ if (vpn_active()) {
         local_date = date(local_last_modified)
       ))
       file_copy(linked_file_path, "data/rapid_ecoss_joined.rds", overwrite = TRUE)
-      
+
       local_last_modified <- server_last_modified
-      
+
       message("New file copied")
     } else {
       message(str_glue("Local file is current (modified:{local_date})",
@@ -133,11 +133,11 @@ hosp_completeness <- full_join(
   )
 
 # Create completeness by age
-age_completness <- 
+age_completness <-
   full_join(
     cocin %>%
-      group_by(subjid) %>% 
-      summarise(age = first(na.omit(age))) %>% 
+      group_by(subjid) %>%
+      summarise(age = first(na.omit(age))) %>%
       mutate(
         age.factor = case_when(
           age < 17 ~ "<17",
@@ -150,7 +150,7 @@ age_completness <-
           is.na(age) ~ NA_character_,
           TRUE ~ "80+"
         )
-      ) %>% 
+      ) %>%
       count(age.factor),
     covid_admissions %>%
       mutate(
@@ -165,7 +165,7 @@ age_completness <-
           is.na(age) ~ NA_character_,
           TRUE ~ "80+"
         )
-      ) %>% 
+      ) %>%
       count(age.factor),
     by = c("age.factor")
   ) %>%
@@ -180,15 +180,17 @@ age_completness <-
 
 
 # Create completeness by sex
-sex_completness <- 
+sex_completness <-
   full_join(
     cocin %>%
-      group_by(subjid) %>% 
-      summarise(sex = as.numeric(first(na.omit(sex)))) %>% 
+      group_by(subjid) %>%
+      summarise(sex = as.numeric(first(na.omit(sex)))) %>%
       count(sex),
     covid_admissions %>%
-      mutate(sex = case_when(sex == "M" ~ 1,
-                             sex == "F" ~ 2)) %>% 
+      mutate(sex = case_when(
+        sex == "M" ~ 1,
+        sex == "F" ~ 2
+      )) %>%
       count(sex),
     by = c("sex")
   ) %>%
@@ -201,9 +203,6 @@ sex_completness <-
     pct_complete = cocin_patients / rapid_patients * 100
   )
 
-## Todo 
+## Todo
 # Make breakdown of hospital per ISO week per sex and pead/ adult/ old
 # Last weeks CHIs RAPID + ECOSS vs COCIN
-
-
-

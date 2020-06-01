@@ -1,3 +1,11 @@
+source("ad-hoc-analysis/read_and_tidy_rapid_data.R")
+
+if (date(local_last_modified) > ymd_hm(latest_extract_date())) {
+  message("local extract is older than RAPID-ECOSS file")
+  source("extract-data/01_get-scottish-data.R")
+  source("extract-data/02_clean-data.R")
+}
+
 hosp_completeness %>%
   left_join(scot_locations, by = c("hospid" = "location")) %>%
   select(

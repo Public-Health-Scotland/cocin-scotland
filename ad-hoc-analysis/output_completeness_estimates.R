@@ -28,4 +28,17 @@ hosp_completeness %>%
     )) %>%
   arrange(order, Health_Board, Hospital_Name) %>%
   select(-order) %>%
-  write_csv(str_glue("output/{date}_completness_summary.csv", date = latest_extract_date()))
+  write_csv(
+    str_glue("output/{date}_completness_summary.csv", date = latest_extract_date())
+    )
+
+age_completness %>% 
+  rename(age_band = age.factor) %>% 
+  write_csv(
+    str_glue("output/{date}_age_completness_summary.csv", date = latest_extract_date())
+  )
+
+sex_completness %>% 
+  write_csv(
+    str_glue("output/{date}_sex_completness_summary.csv", date = latest_extract_date())
+  )

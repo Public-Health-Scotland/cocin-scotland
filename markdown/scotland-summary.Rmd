@@ -15,17 +15,12 @@ knitr::opts_chunk$set(
 )
 
 # Load required packages
-library(tidyverse)
-library(lubridate)
 library(scales)
-library(finalfit)
-library(RCurl)
-library(Hmisc)
 library(ggplot2)
 library(openxlsx)
 library(gt)
 library(ggplot2)
-library(here)
+library(pander)
 
 # Run setup environment for other packages and functions
 source(here("extract-data", "00_setup-environment.R"))
@@ -164,7 +159,7 @@ hb_summary_ex_travelled <- scot_data %>%
 
 ```{r hb_table}
 hb_summary_ex_travelled %>%
-  pander::pander(split.table = Inf)
+  pander(split.table = Inf)
 
 # hb_summary_ex_travelled %>%
 #   gt() %>%
@@ -217,7 +212,7 @@ na_sex_pct <- (nrow(pop_data %>% filter(is.na(sex))) / nrow(pop_data)) * 100
 *Age is unknown for `r number(na_age_pct, accuracy = 0.1)`% of patients. Sex is unknown for `r number(na_sex_pct, accuracy = 0.1)`% of patients.*
 ```{r age_sex_table}
 age_sex_summary %>%
-  pander::pander()
+  pander()
 
 # age_sex_summary %>%
 #   gt() %>%
@@ -331,7 +326,7 @@ na_ethn_pct <- (nrow(pop_data %>% filter(is.na(ethnicity))) / nrow(pop_data)) * 
 *`r number(white_ethn_pct, accuracy = 0.1)`% of patients are of white ethnicity. Ethnicity is unknown for `r number(na_ethn_pct, accuracy = 0.1)`% of patients.* 
 ```{r ethnicity_table}
 ethnicity_data%>%
-  pander::pander()
+  pander()
 
 # ethnicity_data %>%
 #   gt() %>%
@@ -394,7 +389,7 @@ This analysis using onset date of first/earliest symptom (some patients were in 
 
 ```{r onset_week_table}
 onset_data %>%
-  pander::pander(split.table = Inf)
+  pander(split.table = Inf)
 
 # admission_data %>%
 #   gt() %>%

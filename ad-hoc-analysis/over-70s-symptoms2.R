@@ -7,31 +7,31 @@ scot_data <- str_glue("data/{date}_scot-data-clean.rds", date = latest_extract_d
 topline <- scot_data %>%
   select(subjid, age, cestdat, fever_ceoccur_v2:bleed_ceoccur_v2, -ageusia_ceoccur_v2) %>%
   rename(
-    `Fever` = fever_ceoccur_v2,
-    `Cough` = cough_ceoccur_v2,
-    `Cough (sputum)` = coughsput_ceoccur_v2,
-    `Cough (blood)` = coughhb_ceoccur_v2,
-    `Sore throat` = sorethroat_ceoccur_v2,
-    `Runny nose` = runnynose_ceoccur_v2,
-    `Ear pain` = earpain_ceoccur_v2,
-    `Wheeze` = wheeze_ceoccur_v2,
-    `Chest pain` = chestpain_ceoccur_v2,
-    `Muscle ache` = myalgia_ceoccur_v2,
-    `Joint pain` = jointpain_ceoccur_v2,
-    `Fatigue` = fatigue_ceoccur_v2,
-    `Shortness of breath` = shortbreath_ceoccur_v2,
-    `Lower chest wall indrawing` = lowerchest_ceoccur_v2,
-    `Headache` = headache_ceoccur_v2,
-    `Confusion` = confusion_ceoccur_v2,
-    `Seizures` = seizures_cecoccur_v2,
-    `Abdominal pain` = abdopain_ceoccur_v2,
-    `Nausa/vomiting` = vomit_ceoccur_v2,
-    `Diarrhoea` = diarrhoea_ceoccur_v2,
-    `Conjunctivitis` = conjunct_ceoccur_v2,
-    `Skin rash` = rash_ceoccur_v2,
-    `Skin ulcers` = skinulcers_ceoccur_v2,
-    `Lymphadenopathy` = lymp_ceoccur_v2,
-    `Bleeding (Haemorrhage)` = bleed_ceoccur_v2
+    "Fever" = fever_ceoccur_v2,
+    "Cough" = cough_ceoccur_v2,
+    "Cough (sputum)" = coughsput_ceoccur_v2,
+    "Cough (blood)" = coughhb_ceoccur_v2,
+    "Sore throat" = sorethroat_ceoccur_v2,
+    "Runny nose" = runnynose_ceoccur_v2,
+    "Ear pain" = earpain_ceoccur_v2,
+    "Wheeze" = wheeze_ceoccur_v2,
+    "Chest pain" = chestpain_ceoccur_v2,
+    "Muscle ache" = myalgia_ceoccur_v2,
+    "Joint pain" = jointpain_ceoccur_v2,
+    "Fatigue" = fatigue_ceoccur_v2,
+    "Shortness of breath" = shortbreath_ceoccur_v2,
+    "Lower chest wall indrawing" = lowerchest_ceoccur_v2,
+    "Headache" = headache_ceoccur_v2,
+    "Confusion" = confusion_ceoccur_v2,
+    "Seizures" = seizures_cecoccur_v2,
+    "Abdominal pain" = abdopain_ceoccur_v2,
+    "Nausa/vomiting" = vomit_ceoccur_v2,
+    "Diarrhoea" = diarrhoea_ceoccur_v2,
+    "Conjunctivitis" = conjunct_ceoccur_v2,
+    "Skin rash" = rash_ceoccur_v2,
+    "Skin ulcers" = skinulcers_ceoccur_v2,
+    "Lymphadenopathy" = lymp_ceoccur_v2,
+    "Bleeding (Haemorrhage)" = bleed_ceoccur_v2
   ) %>%
   group_by(subjid) %>%
   summarise_all(~ first(na.omit(.))) %>%
@@ -47,12 +47,13 @@ topline <- scot_data %>%
     select(subjid, any_symptoms),
   by = "subjid"
   ) %>%
-  mutate(any_symptoms = recode(any_symptoms, .missing = "NO"))
+  mutate(any_symptoms = recode(any_symptoms, .missing = "NO")) %>% 
+  rename("Any Symptoms" = any_symptoms)
 
 
 symptom_data <- topline %>%
   pivot_longer(
-    cols = c(Fever:`Bleeding (Haemorrhage)`, any_symptoms),
+    cols = c(Fever:"Bleeding (Haemorrhage)", "Any Symptoms"),
     names_to = "Symptom",
     values_to = "Status",
     values_drop_na = TRUE
@@ -62,8 +63,19 @@ symptom_data <- topline %>%
   count(Status) %>%
   ungroup()
 
+symp_data_levels_order <-
+  symptom_data %>%
+  filter(
+    Status == "Yes",
+    admission == "Before 30th April"
+  ) %>%
+  arrange(desc(n)) %>%
+  pull(Symptom)
+
+
 # Quick Graph
 sympt_bar_chart <- symptom_data %>%
+  mutate(Symptom = factor(Symptom, symp_data_levels_order)) %>% 
   ggplot(aes(x = Symptom, y = n, fill = Status)) +
   geom_col(position = "fill") +
   theme_minimal() +
@@ -104,15 +116,6 @@ symptom_data %>%
   write_csv(str_glue("output/{date}_over70_symptom_comparison.csv",
     date = latest_extract_date()
   ))
-
-symp_data_levels_order <-
-  symptom_data %>%
-  filter(
-    Status == "Yes",
-    admission == "Before 30th April"
-  ) %>%
-  arrange(desc(n)) %>%
-  pull(Symptom)
 
 # UoE symptom plot
 uoe_sympt_plot <- symptom_data %>%

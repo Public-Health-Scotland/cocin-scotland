@@ -7,7 +7,9 @@ if (date(local_last_modified) > ymd_hm(latest_extract_date())) {
 }
 
 # Read COCIN data
-cocin <- read_rds(str_glue("data/{date}_scot-data-clean.rds", date = latest_extract_date()))
+cocin <- read_rds(str_glue("data/{date}_scot-data-clean.rds", date = latest_extract_date())) %>% 
+  # Repair any age/sex we can using CHI
+  fix_age_sex_from_chi()
 
 # Create completness per hospital
 hosp_completeness <- full_join(

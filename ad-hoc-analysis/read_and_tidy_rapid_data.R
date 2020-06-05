@@ -21,7 +21,7 @@ if (vpn_active()) {
 
       local_last_modified <- server_last_modified
 
-      message("New file copied")
+      message("New file coppied")
     } else {
       message(str_glue("Local file is current (modified:{local_date})",
         local_date = date(local_last_modified)
@@ -111,98 +111,6 @@ rapid %>%
 # Create a dataset of single admission per CHI
 covid_admissions <- bind_rows(test_in_stay, test_before_stay)
 
-# Read COCIN data
-cocin <- read_rds(str_glue("data/{date}_scot-data-clean.rds", date = latest_extract_date()))
-
-# Create completness per hospital
-hosp_completeness <- full_join(
-  cocin %>%
-    distinct(subjid, hospid) %>%
-    count(hospid),
-  covid_admissions %>%
-    count(hospital_of_treatment_code),
-  by = c("hospid" = "hospital_of_treatment_code")
-) %>%
-  rename(
-    cocin_patients = n.x,
-    rapid_patients = n.y
-  ) %>%
-  mutate(
-    cocin_patients = if_else(is.na(cocin_patients), 0L, cocin_patients),
-    pct_complete = cocin_patients / rapid_patients * 100
-  )
-
-# Create completeness by age
-age_completness <-
-  full_join(
-    cocin %>%
-      group_by(subjid) %>%
-      summarise(age = first(na.omit(age))) %>%
-      mutate(
-        age.factor = case_when(
-          age < 17 ~ "<17",
-          age < 30 ~ "17-29",
-          age < 40 ~ "30-39",
-          age < 50 ~ "40-49",
-          age < 60 ~ "50-59",
-          age < 70 ~ "60-69",
-          age < 80 ~ "70-79",
-          is.na(age) ~ NA_character_,
-          TRUE ~ "80+"
-        )
-      ) %>%
-      count(age.factor),
-    covid_admissions %>%
-      mutate(
-        age.factor = case_when(
-          age < 17 ~ "<17",
-          age < 30 ~ "17-29",
-          age < 40 ~ "30-39",
-          age < 50 ~ "40-49",
-          age < 60 ~ "50-59",
-          age < 70 ~ "60-69",
-          age < 80 ~ "70-79",
-          is.na(age) ~ NA_character_,
-          TRUE ~ "80+"
-        )
-      ) %>%
-      count(age.factor),
-    by = c("age.factor")
-  ) %>%
-  rename(
-    cocin_patients = n.x,
-    rapid_patients = n.y
-  ) %>%
-  mutate(
-    cocin_patients = if_else(is.na(cocin_patients), 0L, cocin_patients),
-    pct_complete = cocin_patients / rapid_patients * 100
-  )
+rm(rapid, test_after_dis, test_in_stay, test_before_stay, linked_file_path)
 
 
-# Create completeness by sex
-sex_completness <-
-  full_join(
-    cocin %>%
-      group_by(subjid) %>%
-      summarise(sex = as.numeric(first(na.omit(sex)))) %>%
-      count(sex),
-    covid_admissions %>%
-      mutate(sex = case_when(
-        sex == "M" ~ 1,
-        sex == "F" ~ 2
-      )) %>%
-      count(sex),
-    by = c("sex")
-  ) %>%
-  rename(
-    cocin_patients = n.x,
-    rapid_patients = n.y
-  ) %>%
-  mutate(
-    cocin_patients = if_else(is.na(cocin_patients), 0L, cocin_patients),
-    pct_complete = cocin_patients / rapid_patients * 100
-  )
-
-## Todo
-# Make breakdown of hospital per ISO week per sex and pead/ adult/ old
-# Last weeks CHIs RAPID + ECOSS vs COCIN

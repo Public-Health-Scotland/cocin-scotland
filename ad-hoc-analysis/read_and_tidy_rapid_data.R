@@ -109,7 +109,20 @@ rapid %>%
   View()
 
 # Create a dataset of single admission per CHI
-covid_admissions <- bind_rows(test_in_stay, test_before_stay)
+covid_admissions <- bind_rows(test_in_stay, test_before_stay) %>%
+  mutate(
+    age.factor = case_when(
+      age < 17 ~ "<17",
+      age < 30 ~ "17-29",
+      age < 40 ~ "30-39",
+      age < 50 ~ "40-49",
+      age < 60 ~ "50-59",
+      age < 70 ~ "60-69",
+      age < 80 ~ "70-79",
+      is.na(age) ~ NA_character_,
+      TRUE ~ "80+"
+    )
+  )
 
 rm(rapid, test_after_dis, test_in_stay, test_before_stay, linked_file_path)
 

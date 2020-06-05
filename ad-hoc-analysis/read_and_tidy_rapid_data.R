@@ -59,7 +59,7 @@ rapid <- read_rds(here("data", "rapid_ecoss_joined.rds")) %>%
 # Note we don't group episodes which change hospitals as COCIN CRFs are single hospital
 rapid <- rapid %>%
   filter(result == 1) %>%
-  group_by(chi_number, temporal_link_id, location_link_id, hospital_of_treatment_code) %>%
+  group_by(chi_number, temporal_link_id, location_link_id, hospital_of_treatment_code, health_board_of_treatment) %>%
   summarise(
     adm_date = min(admission_date),
     dis_date = max(discharge_date),
@@ -108,6 +108,8 @@ rapid %>%
   anti_join(test_after_dis, by = "chi_number") %>%
   View()
 
+
+
 # Create a dataset of single admission per CHI
 covid_admissions <- bind_rows(test_in_stay, test_before_stay) %>%
   mutate(
@@ -121,9 +123,24 @@ covid_admissions <- bind_rows(test_in_stay, test_before_stay) %>%
       age < 80 ~ "70-79",
       is.na(age) ~ NA_character_,
       TRUE ~ "80+"
-    )
+    ),
+    age_band = case_when(
+      age < 18 ~ "Pediatric",
+      age >= 18 ~ "Adult"
+    ) %>%
+      as_factor() %>%
+      fct_explicit_na(na_level = "Unknown"),
+    sex = case_when(
+      sex == "M" ~ "Male",
+      sex == "F" ~ "Female"
+    ) %>% 
+      factor(levels = c("Male", "Female", "Not specified")),
+    admission_iso = isoweek(adm_date),
+    admission_week = floor_date(adm_date, unit = "week", week_start = 1),
+    health_board_of_treatment = str_sub(health_board_of_treatment, 5) %>%
+      str_to_title() %>%
+      str_replace("&", "and") %>%
+      str_c("NHS ", .)
   )
 
 rm(rapid, test_after_dis, test_in_stay, test_before_stay, linked_file_path)
-
-

@@ -16,6 +16,7 @@ topline <- scot_data %>%
     age,
     hostdat,
     fever_ceoccur_v2:bleed_ceoccur_v2,
+    -ageusia_ceoccur_v2,
     ageusia_ceoccur_v2,
     anosmia_ceoccur_v2
   ) %>% 

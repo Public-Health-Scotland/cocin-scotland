@@ -63,17 +63,17 @@ topline <- scot_data %>%
       fct_relabel(~ c("YES", "NO", "Unknown")) %>%
       fct_explicit_na(na_level = "Unknown")
   ) %>% 
-  left_join((.) %>%
-    filter_at(vars(Fever:Anosmia), all_vars(. != "YES")) %>%
+  left_join(
+    filter_at(., vars(Fever:Anosmia), all_vars(. != "YES")) %>%
     mutate("Asymptomatic (inc Unknown)" = "YES") %>%
     select(subjid, "Asymptomatic (inc Unknown)"),
   by = "subjid"
   ) %>%
-  left_join((.) %>%
-    filter_at(vars(Fever:Anosmia), all_vars(. == "NO")) %>%
-    mutate("Asymptomatic (all No)" = "YES") %>%
-    select(subjid, "Asymptomatic (all No)"),
-  by = "subjid"
+  left_join(
+    filter_at(., vars(Fever:Anosmia), all_vars(. == "NO")) %>%
+      mutate("Asymptomatic (all No)" = "YES") %>%
+      select(subjid, "Asymptomatic (all No)"),
+    by = "subjid"
   ) %>%
   mutate_at(
     vars("Asymptomatic (inc Unknown)", "Asymptomatic (all No)"),
@@ -107,59 +107,57 @@ symptom_data <- topline %>%
   count(Status) %>%
   ungroup()
 
-symp_data_levels_order <-
-  symptom_data %>%
+symp_data_levels_order <- symptom_data %>%
   filter(
     Status == "Yes",
     admission == "Before 30th April"
   ) %>%
   mutate(order = if_else(Symptom %in% c("Asymptomatic (inc Unknown)", "Asymptomatic (all No)"),
-    0,
-    1
+    1, 0
   )) %>%
   arrange(order, desc(n)) %>%
   pull(Symptom)
 
 
 cluster_data <- topline %>%
-  left_join((.) %>% 
-              filter_at(vars("Ear pain", "Confusion", "Seizures", "Skin rash", "Skin ulcers", "Conjunctivitis", "Bleeding (Haemorrhage)", "Headache"), any_vars(. == "YES")) %>% 
-              mutate(Neurocutaneous = "YES") %>% 
-              select(subjid, Neurocutaneous)
-            ) %>% 
-  left_join((.) %>% 
-              filter_at(vars("Fatigue", "Muscle ache", "Lymphadenopathy", "Fever"), any_vars(. == "YES")) %>% 
-              mutate(Generalised = "YES") %>% 
-              select(subjid, Generalised)
+  left_join(
+    filter_at(., vars("Ear pain", "Confusion", "Seizures", "Skin rash", "Skin ulcers", "Conjunctivitis", "Bleeding (Haemorrhage)", "Headache"), any_vars(. == "YES")) %>%
+      mutate(Neurocutaneous = "YES") %>%
+      select(subjid, Neurocutaneous)
   ) %>% 
-  left_join((.) %>% 
-              filter_at(vars("Diarrhoea", "Nausa/vomiting", "Abdominal pain", "Joint pain"), any_vars(. == "YES")) %>% 
-              mutate(Gastrointestinal = "YES") %>% 
-              select(subjid, Gastrointestinal)
+  left_join(
+    filter_at(., vars("Fatigue", "Muscle ache", "Lymphadenopathy", "Fever"), any_vars(. == "YES")) %>%
+      mutate(Generalised = "YES") %>%
+      select(subjid, Generalised)
   ) %>% 
-  left_join((.) %>% 
-              filter_at(vars("Cough", "Cough (blood)", "Cough (sputum)", "Wheeze", "Shortness of breath", "Sore throat", "Chest pain", "Lower chest wall indrawing", "Runny nose"), any_vars(. == "YES")) %>% 
-              mutate(Respiratory = "YES") %>% 
-              select(subjid, Respiratory)
+  left_join(
+    filter_at(., vars("Diarrhoea", "Nausa/vomiting", "Abdominal pain", "Joint pain"), any_vars(. == "YES")) %>%
+      mutate(Gastrointestinal = "YES") %>%
+      select(subjid, Gastrointestinal)
+  ) %>%
+  left_join(
+    filter_at(., vars("Cough", "Cough (blood)", "Cough (sputum)", "Wheeze", "Shortness of breath", "Sore throat", "Chest pain", "Lower chest wall indrawing", "Runny nose"), any_vars(. == "YES")) %>%
+      mutate(Respiratory = "YES") %>%
+      select(subjid, Respiratory)
+  ) %>%
+  left_join(
+    filter_at(., vars("Cough", "Cough (blood)", "Cough (sputum)", "Fever", "Ageusia", "Anosmia"), any_vars(. == "YES")) %>%
+      mutate(Key = "YES") %>%
+      select(subjid, Key)
   ) %>% 
-left_join((.) %>% 
-            filter_at(vars("Cough", "Cough (blood)", "Cough (sputum)", "Fever", "Ageusia", "Anosmia"), any_vars(. == "YES")) %>% 
-            mutate(Key = "YES") %>% 
-            select(subjid, Key)
-) %>%
-  select(subjid, admission, "Asymptomatic (inc Unknown)":Key) %>% 
+  select(subjid, admission, "Asymptomatic (inc Unknown)":Key) %>%
   mutate_at(
     vars(-subjid, -admission),
-    ~ replace_na(., "NO") %>% 
+    ~ replace_na(., "NO") %>%
       factor() %>%
       fct_relabel(~ c("YES", "NO")) 
-  ) %>% 
+  ) %>%
   pivot_longer(
     cols = c(-subjid, -admission),
     names_to = "Cluster",
     values_to = "Status",
     values_drop_na = TRUE
-  ) %>% 
+  ) %>%
   mutate(Status = recode(Status, "YES" = "Yes", "NO" = "No")) %>%
   group_by(admission, Cluster) %>%
   count(Status) %>%
@@ -173,15 +171,11 @@ cluster_data_levels_order <-
     admission == "Before 30th April"
   ) %>%
   mutate(order = if_else(Cluster %in% c("Asymptomatic (inc Unknown)", "Asymptomatic (all No)"),
-                         0,
-                         1
-  )) %>%
+                         1, 0)
+         ) %>%
   arrange(order, desc(n)) %>%
   pull(Cluster)
 
-library(ggVennDiagram)
-
-ggVennDiagram(tbl_clusters)
 
 
 

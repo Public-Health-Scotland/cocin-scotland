@@ -121,15 +121,64 @@ sex_completness %>%
     str_glue("output/{date}_sex_completness_summary.csv", date = date(latest_extract_date()))
   )
 
-
-
-
-
-
-
-
-
-
 ## Todo
 # Make breakdown of hospital per ISO week per sex and pead/ adult/ old
 # Last weeks CHIs RAPID + ECOSS vs COCIN
+
+master_completness <- 
+  full_join(
+    cocin %>% 
+      group_by(subjid) %>% 
+      summarise_at(vars(hb_name, hostdat, age, sex), ~first(na.omit(.))) %>% 
+      mutate(admission_iso = isoweek(hostdat),
+             admission_week = floor_date(hostdat, unit = "week", week_start = 1),
+             age_band = case_when(
+               age < 18 ~ "Pediatric",
+               age >= 18 ~ "Adult"
+             ) %>%
+               as_factor() %>%
+               fct_explicit_na(na_level = "Unknown")) %>% 
+      count(health_board_of_treatment = hb_name, admission_iso, admission_week, age_band, sex),
+    covid_admissions %>% 
+      count(health_board_of_treatment, admission_iso, admission_week, age_band, sex),
+    by = c("health_board_of_treatment", "admission_iso", "admission_week", "age_band", "sex")
+  ) %>%
+  rename(
+    cocin = n.x,
+    rapid = n.y
+  ) %>%
+  mutate(
+    cocin = if_else(is.na(cocin), 0L, cocin),
+    "Percent complete" = scales::percent(cocin / rapid, accuracy = 0.1)
+  ) 
+
+master_completness %>% 
+  group_split(health_board_of_treatment) %>% 
+  adorn_totals(name = "Scotland") %>% 
+  bind_rows() %>% 
+  View()
+
+master_completness %>%
+  select(-admission_iso, -`Percent complete`) %>%
+  sum_totals(c("cocin", "rapid"), 
+             c("health_board_of_treatment", "admission_week", "age_band", "sex"), 
+             na.rm = TRUE) %>%
+  mutate(admission_iso = isoweek(ymd(admission_week))) %>%
+  mutate_at(vars(health_board_of_treatment), ~if_else(. == "Total", "Scotland", .)) %>% 
+  mutate_at(vars(admission_week, age_band, sex), ~if_else(. == "Total", "All", .)) %>% 
+  arrange(health_board_of_treatment, admission_iso, age_band, sex)
+
+
+  
+
+
+%>% 
+  rename(
+    "NHS Health Board" = health_board_of_treatment,
+    "Admission ISO week" = admission_iso,
+    "Admission week start" = admission_week,
+    "Age Group" = age_band,
+    "Sex" = sex,
+    "COCIN count" = cocin,
+    "RAPID count" = rapid
+  )

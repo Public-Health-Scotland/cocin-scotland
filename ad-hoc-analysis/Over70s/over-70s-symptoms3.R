@@ -150,7 +150,7 @@ cluster_data <- topline %>%
     vars(-subjid, -admission),
     ~ replace_na(., "NO") %>%
       factor() %>%
-      fct_relabel(~ c("YES", "NO")) 
+      fct_relabel(~ c("NO", "YES"))
   ) %>%
   pivot_longer(
     cols = c(-subjid, -admission),

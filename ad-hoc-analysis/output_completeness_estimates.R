@@ -101,13 +101,9 @@ sex_completness <-
   full_join(
     cocin %>%
       group_by(subjid) %>%
-      summarise(sex = as.numeric(first(na.omit(sex)))) %>%
+      summarise(sex = first(na.omit(sex))) %>%
       count(sex),
     covid_admissions %>%
-      mutate(sex = case_when(
-        sex == "M" ~ 1,
-        sex == "F" ~ 2
-      )) %>%
       count(sex),
     by = c("sex")
   ) %>%

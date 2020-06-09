@@ -129,35 +129,33 @@ symp_data_levels_order <- symptom_data %>%
 cluster_data <- topline %>%
   left_join(
     filter_at(., vars("Ear pain", "Confusion", "Seizures", "Skin rash", "Skin ulcers", "Conjunctivitis", "Bleeding (Haemorrhage)", "Headache"), any_vars(. == "YES")) %>%
-      mutate(Neurocutaneous = "YES") %>%
+      mutate(Neurocutaneous = "YES" %>% factor(levels = c("YES", "NO"))) %>%
       select(subjid, Neurocutaneous)
   ) %>% 
   left_join(
     filter_at(., vars("Fatigue", "Muscle ache", "Lymphadenopathy", "Fever"), any_vars(. == "YES")) %>%
-      mutate(Generalised = "YES") %>%
+      mutate(Generalised = "YES" %>% factor(levels = c("YES", "NO"))) %>%
       select(subjid, Generalised)
   ) %>% 
   left_join(
     filter_at(., vars("Diarrhoea", "Nausea/vomiting", "Abdominal pain", "Joint pain"), any_vars(. == "YES")) %>%
-      mutate(Gastrointestinal = "YES") %>%
+      mutate(Gastrointestinal = "YES" %>% factor(levels = c("YES", "NO"))) %>%
       select(subjid, Gastrointestinal)
   ) %>%
   left_join(
     filter_at(., vars("Cough", "Cough (blood)", "Cough (sputum)", "Wheeze", "Shortness of breath", "Sore throat", "Chest pain", "Lower chest wall in-drawing", "Runny nose"), any_vars(. == "YES")) %>%
-      mutate(Respiratory = "YES") %>%
+      mutate(Respiratory = "YES" %>% factor(levels = c("YES", "NO"))) %>%
       select(subjid, Respiratory)
   ) %>%
   left_join(
     filter_at(., vars("Cough", "Cough (blood)", "Cough (sputum)", "Fever", "Ageusia", "Anosmia"), any_vars(. == "YES")) %>%
-      mutate(Key = "YES") %>%
+      mutate(Key = "YES" %>% factor(levels = c("YES", "NO"))) %>%
       select(subjid, Key)
   ) %>% 
   select(subjid, admission, "Asymptomatic (inc Unknown)":Key) %>%
   mutate_at(
     vars(-subjid, -admission),
-    ~ replace_na(., "NO") %>%
-      factor() %>%
-      fct_relabel(~ c("NO", "YES"))
+    ~ replace_na(., "NO")
   ) %>%
   pivot_longer(
     cols = c(-subjid, -admission),

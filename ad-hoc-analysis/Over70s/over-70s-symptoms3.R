@@ -137,6 +137,12 @@ symptom_data <- topline %>%
   count(Status) %>%
   ungroup()
 
+# Fix for Anosmia
+if ((symptom_data %>% filter(admission == "Before 30th April", Symptom == "Anosmia", Status == "Yes") %>% nrow()) == 0) {
+  symptom_data <- symptom_data %>% 
+    add_row(admission = "Before 30th April", Symptom = "Anosmia", Status = "Yes", n = 0)
+}
+
 symp_data_levels_order <- symptom_data %>%
   filter(
     Status == "Yes",

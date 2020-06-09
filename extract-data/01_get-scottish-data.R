@@ -21,13 +21,17 @@ source("extract-data/00_setup-environment.R")
 ### 1 - Extract patient id data from RedCap via API ----
 
 # Enter API Token
-Sys.setenv(
-  ccp_token =
-    rstudioapi::showPrompt(
-      title = "Enter API token",
-      message = "API token:"
-    )
-)
+if (Sys.getenv("ccp_token") == "") {
+  Sys.setenv(
+    ccp_token =
+      rstudioapi::showPrompt(
+        title = "Enter API token",
+        message = "API token:"
+      )
+  )
+} else {
+  message("Using stored API token - run Sys.setenv(ccp_token = \"<API_TOKEN>\") to reset it")
+}
 
 
 # Call API allowing for up to 5 tries 

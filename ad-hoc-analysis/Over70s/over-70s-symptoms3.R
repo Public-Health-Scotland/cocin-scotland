@@ -41,12 +41,12 @@ topline <- scot_data %>%
     "Joint pain" = jointpain_ceoccur_v2,
     "Fatigue" = fatigue_ceoccur_v2,
     "Shortness of breath" = shortbreath_ceoccur_v2,
-    "Lower chest wall indrawing" = lowerchest_ceoccur_v2,
+    "Lower chest wall in-drawing" = lowerchest_ceoccur_v2,
     "Headache" = headache_ceoccur_v2,
     "Confusion" = confusion_ceoccur_v2,
     "Seizures" = seizures_cecoccur_v2,
     "Abdominal pain" = abdopain_ceoccur_v2,
-    "Nausa/vomiting" = vomit_ceoccur_v2,
+    "Nausea/vomiting" = vomit_ceoccur_v2,
     "Diarrhoea" = diarrhoea_ceoccur_v2,
     "Conjunctivitis" = conjunct_ceoccur_v2,
     "Skin rash" = rash_ceoccur_v2,
@@ -138,12 +138,12 @@ cluster_data <- topline %>%
       select(subjid, Generalised)
   ) %>% 
   left_join(
-    filter_at(., vars("Diarrhoea", "Nausa/vomiting", "Abdominal pain", "Joint pain"), any_vars(. == "YES")) %>%
+    filter_at(., vars("Diarrhoea", "Nausea/vomiting", "Abdominal pain", "Joint pain"), any_vars(. == "YES")) %>%
       mutate(Gastrointestinal = "YES") %>%
       select(subjid, Gastrointestinal)
   ) %>%
   left_join(
-    filter_at(., vars("Cough", "Cough (blood)", "Cough (sputum)", "Wheeze", "Shortness of breath", "Sore throat", "Chest pain", "Lower chest wall indrawing", "Runny nose"), any_vars(. == "YES")) %>%
+    filter_at(., vars("Cough", "Cough (blood)", "Cough (sputum)", "Wheeze", "Shortness of breath", "Sore throat", "Chest pain", "Lower chest wall in-drawing", "Runny nose"), any_vars(. == "YES")) %>%
       mutate(Respiratory = "YES") %>%
       select(subjid, Respiratory)
   ) %>%

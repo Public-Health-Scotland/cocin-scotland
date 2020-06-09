@@ -332,7 +332,6 @@ plt_Significant_symptoms <- symptom_data %>%
   scale_y_continuous("Patients with symptom (%)", labels = scales::percent) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   facet_grid(~Symptom, labeller = labeller(Symptom = label_wrap_gen(10)))
-plt_significant_symptoms
 
 plt_clusters <- cluster_data %>%
   mutate(Cluster = factor(Cluster, cluster_data_levels_order)) %>% 
@@ -346,7 +345,6 @@ plt_clusters <- cluster_data %>%
   scale_y_continuous("Patients with any symptom \nin cluster (%)", labels = scales::percent) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   facet_grid(~Cluster, labeller = labeller(Cluster = label_wrap_gen(10)))
-plt_clusters
 
 
 # Output ------------------------------------------------------------------

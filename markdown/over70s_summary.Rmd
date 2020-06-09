@@ -1,0 +1,74 @@
+---
+title: "Draft-Over70 Summary"
+author: "James McMahon"
+date: "`r format(Sys.Date(), '%A, %d %B %Y') `"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+# Set default knitr options
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE
+)
+```
+
+## Introduction
+
+The extract was taken from COCIN on `r date(latest_extract_date())` at this time there were `r n_distinct(scot_data$subjid)` patients in COCIN
+
+This analysis is to explore any differences in symptomatology between two cohorts of Scottish patients with a recorded age of 70 or over.
+
+Cohort 1: Patients admitted before 30th April 2020 (N = `r n_before`)
+
+Cohort 2: Patients admitted on or after 30th April 2020 (N = `r n_after`)
+
+The testing strategy for the over 70 age group was changed on April 30th 2020 such that all over 70s should be tested for COVID-19 by default on admission to hospital, admissions before April 30th would only have been tested on the discretion of a clinician.
+
+## Individual symptoms
+In the following table, all recorded symptoms are listed with the numbers of patients who had the symptom on admission a significant minority have 'Unknown' recorded for the symptom status, these have been excluded. Therefore the percentages are % of patients with symptom out of all patients with reliable data recorded for that symptom.
+
+**TABLE HERE**
+
+Most symptoms show a decrease in the proportion of patients with it at admission, however not all differences are statistically significant, this could be due to the small numbers in some groups.
+
+Note that Ageusia (loss of sense of taste) and Anosmia (loss of sense of smell) were not included in the COCIN data collection until recently and therefore have small numbers in both cohorts.
+
+This bar chart visualises the change in proportion for the symptoms where the change was significant.
+
+```{r symptom_bar, fig.width = 11, fig.height = 5}
+plt_Significant_symptoms
+```
+
+## Symptom Clusters
+The University of Edinburgh derived symptom clusters, based on how often the symptoms appear in the same patient. The clusters have been named according to symptoms which appear. Note that Ageusia and Anosmia were excluded from the clustering.
+
+**Neurocutaneous Symptoms**: Ear pain, Confusion, Seizures, Skin rash, Skin ulcers, Conjunctivitis, Bleeding (Haemorrhage), Headache.
+
+**Generalised Symptoms**: Fatigue, Muscle ache, Lymphadenopathy, Fever.
+
+**Gastrointestinal Symptoms**: Diarrhoea, Nausea/vomiting, Abdominal pain, Joint pain.
+
+**Respiratory Symptoms**: Cough (All types), Wheeze, Shortness of breath, Sore throat, Chest pain, Lower chest wall in-drawing, Runny nose.
+
+The analysis also includes a group labelled **Key Symptoms** which contains: Cough (All types), Fever, Anosmisa and Ageusia.
+
+As with the individual symptoms there is a general trend towards test-positive patients being less symptomatic (at admission) since the change in test strategy.
+
+**CLUSTERS TABLE HERE**
+
+```{r cluster_bar, fig.width = 9, fig.height = 5}
+plt_clusters
+```
+
+## Symptom corrolation
+The below Venn diagram is an example of exploration of the corrolation between symptoms/symptom clusters.
+
+```{r venn, fig.width = 14, fig.height = 7}
+gridExtra::grid.arrange(venn_before, venn_after, ncol = 2)
+```
+
+
+
+

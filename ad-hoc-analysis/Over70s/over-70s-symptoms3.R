@@ -162,12 +162,12 @@ cluster_data <- topline %>%
       select(subjid, Neurocutaneous)
   ) %>% 
   left_join(
-    filter_at(., vars("Fatigue", "Muscle ache", "Lymphadenopathy", "Fever"), any_vars(. == "YES")) %>%
+    filter_at(., vars("Fatigue", "Muscle ache", "Lymphadenopathy", "Fever", "Joint pain"), any_vars(. == "YES")) %>%
       mutate(Generalised = "YES" %>% factor(levels = c("YES", "NO"))) %>%
       select(subjid, Generalised)
   ) %>% 
   left_join(
-    filter_at(., vars("Diarrhoea", "Nausea/vomiting", "Abdominal pain", "Joint pain"), any_vars(. == "YES")) %>%
+    filter_at(., vars("Diarrhoea", "Nausea/vomiting", "Abdominal pain"), any_vars(. == "YES")) %>%
       mutate(Gastrointestinal = "YES" %>% factor(levels = c("YES", "NO"))) %>%
       select(subjid, Gastrointestinal)
   ) %>%

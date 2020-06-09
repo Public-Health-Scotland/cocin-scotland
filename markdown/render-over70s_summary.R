@@ -20,7 +20,7 @@ source("ad-hoc-analysis/Over70s/over-70s-venn.R")
 render(
   input = "markdown/over70s_summary.Rmd",
   output_dir = "output",
-  output_file = str_glue("DRAFT-{date}_over70s_summary",
+  output_file = str_glue("{date}_over70s_summary",
     date = date(latest_extract_date())
   )
 )

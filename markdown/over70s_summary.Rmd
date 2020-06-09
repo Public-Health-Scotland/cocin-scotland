@@ -16,24 +16,34 @@ knitr::opts_chunk$set(
 
 ## Introduction
 
-The extract was taken from COCIN on `r date(latest_extract_date())` at this time there were `r n_distinct(scot_data$subjid)` patients in COCIN
+** COCIN INTRO **
+
+The extract was taken from COCIN on `r date(latest_extract_date())` at this time there were **`r n_distinct(scot_data$subjid)`**  patients in COCIN.
 
 This analysis is to explore any differences in symptomatology between two cohorts of Scottish patients with a recorded age of 70 or over.
 
-Cohort 1: Patients admitted before 30th April 2020 (N = `r n_before`)
+Cohort 1: Patients admitted before 30th April 2020 (**N = `r n_before`**)
 
-Cohort 2: Patients admitted on or after 30th April 2020 (N = `r n_after`)
+Cohort 2: Patients admitted on or after 30th April 2020 (**N = `r n_after`**)
 
-The testing strategy for the over 70 age group was changed on April 30th 2020 such that all over 70s should be tested for COVID-19 by default on admission to hospital, admissions before April 30th would only have been tested on the discretion of a clinician.
+The first of these patients was recruited <nobr>`r earliest_recruitment`</nobr> and the last was recruited <nobr>`r latest_recruitment`</nobr>. The number of confirmed cases is `r n_before_pos` (`r scales::percent(n_before_pos/n_before)`) and `r n_after_pos` (`r scales::percent(n_after_pos/n_after)`) in Cohort 1 and 2 respectively, the remainder are not confirmed but are strongly suspected, the confirmed number is likely to be an undercount due to data completeness / timeliness.
+
+The testing strategy for the over 70 age group was changed on April 30th 2020 such that all over 70s should be tested for COVID-19 by default on admission to hospital, admissions before April 30th would only have been tested on the discretion of a clinician and suspicion of COVID-19 disease.
 
 ## Individual symptoms
-In the following table, all recorded symptoms are listed with the numbers of patients who had the symptom on admission a significant minority have 'Unknown' recorded for the symptom status, these have been excluded. Therefore the percentages are % of patients with symptom out of all patients with reliable data recorded for that symptom.
+In the following table, all recorded symptoms are listed with the numbers of patients who had the symptom on admission a notable number have "Unknown" recorded for the symptom status, these have been excluded. Therefore, the percentages are '% of patients with symptom out of all patients with reliable data recorded for that symptom'. There are some patients who have 'Unknown' recorded for all symptoms, `r n_before_unknown` (`r scales::percent(n_before_unknown/n_before)`) and `r n_after_unknown` (`r scales::percent(n_after_unknown/n_after)`) in Cohort 1 and 2 respectively.
 
 **TABLE HERE**
 
+Information on symptoms in COCIN are entered by research nurses looking at patient clinical notes. Symptoms may be entered as "Yes", "No" or "Unknown"; it is not clear if "Unknown" means the patient did not experience that symptom, or whether the patient did experience it but it is not captured in the notes. For this reason, in the analyses below patients reporting "Unknown" for a particular symptom have been excluded, except for "no symptoms" where exclusion would lead to numbers too small to analyse.
+
+*The numbers for 'No symptoms presenting' represent the upper and lower bound for this group depending on whether 'Unknown' is treated as the patient having a particular symptom or not.
+
 Most symptoms show a decrease in the proportion of patients with it at admission, however not all differences are statistically significant, this could be due to the small numbers in some groups.
 
-Note that Ageusia (loss of sense of taste) and Anosmia (loss of sense of smell) were not included in the COCIN data collection until recently and therefore have small numbers in both cohorts.
+The only individual symptom which showed a significant increase was 'Headache'. There was also a significant increase in the number of patients who had no symptoms at admission.
+
+Note that Ageusia (loss of sense of taste) and Anosmia (loss of sense of smell) were not included in the COCIN data collection until mid-March and therefore have small numbers in both cohorts.
 
 This bar chart visualises the change in proportion for the symptoms where the change was significant.
 
@@ -42,33 +52,36 @@ plt_Significant_symptoms
 ```
 
 ## Symptom Clusters
-The University of Edinburgh derived symptom clusters, based on how often the symptoms appear in the same patient. The clusters have been named according to symptoms which appear. Note that Ageusia and Anosmia were excluded from the clustering.
+The clusters used below are based on work by University of Edinburgh which most often occurred together.
 
 **Neurocutaneous Symptoms**: Ear pain, Confusion, Seizures, Skin rash, Skin ulcers, Conjunctivitis, Bleeding (Haemorrhage), Headache.
 
-**Generalised Symptoms**: Fatigue, Muscle ache, Lymphadenopathy, Fever.
+**Generalised Symptoms**: Fatigue, Muscle ache, Lymphadenopathy, Fever, Joint pain.
 
-**Gastrointestinal Symptoms**: Diarrhoea, Nausea/vomiting, Abdominal pain, Joint pain.
+**Gastrointestinal Symptoms**: Diarrhoea, Nausea/vomiting, Abdominal pain.
 
 **Respiratory Symptoms**: Cough (All types), Wheeze, Shortness of breath, Sore throat, Chest pain, Lower chest wall in-drawing, Runny nose.
 
-The analysis also includes a group labelled **Key Symptoms** which contains: Cough (All types), Fever, Anosmisa and Ageusia.
 
-As with the individual symptoms there is a general trend towards test-positive patients being less symptomatic (at admission) since the change in test strategy.
+**Key Symptoms**: Cough (All types), Fever, Anosmisa and Ageusia.
+
+For a patient to be placed in a given cluster they must have reported 'Yes' for at least one of the symptoms in it. The denominator is the entire cohort for all clusters.
 
 **CLUSTERS TABLE HERE**
+
+As with the individual symptoms there is a general trend towards test-positive patients being less symptomatic (at admission) since the change in test strategy.
 
 ```{r cluster_bar, fig.width = 9, fig.height = 5}
 plt_clusters
 ```
 
-## Symptom corrolation
-The below Venn diagram is an example of exploration of the corrolation between symptoms/symptom clusters.
+## Symptom Cluster correlation
+The following Venn Diagrams look at the correlations between clusters in the two cohorts, note that Key and Respiratory are expected to overlap to a high degree as they both contain any patients presenting a cough.
 
-```{r venn, fig.width = 14, fig.height = 7}
-gridExtra::grid.arrange(venn_before, venn_after, ncol = 2)
+```{r venn, fig.width = 15, fig.height = 9}
+gridExtra::grid.arrange(venn_gastro_before, venn_gastro_after, ncol = 2)
+
+gridExtra::grid.arrange(venn_neuro_before, venn_neuro_after, ncol = 2)
+
+gridExtra::grid.arrange(venn_general_before, venn_general_after, ncol = 2)
 ```
-
-
-
-

@@ -347,6 +347,7 @@ plt_clusters <- cluster_data %>%
   facet_grid(~Cluster, labeller = labeller(Cluster = label_wrap_gen(10)))
 
 
+
 # Output ------------------------------------------------------------------
 library(writexl)
 
@@ -355,22 +356,38 @@ tbl_overview <- tibble(
   Value = c(date(latest_extract_date()), min(topline$hostdat), max(topline$hostdat), summary(topline$hostdat)[2], summary(topline$hostdat)[5])
 )
 
-write_xlsx(x = list(
+tables <- list(
   "Notes" = tbl_overview,
   "Summary" = tbl_summary,
   "All symptoms" = tbl_all_symptoms,
   "All symptoms (ex unknown)" = tbl_all_symptoms_ex_unknown,
   "Symptom clusters" = tbl_clusters
-), path = str_glue("output/{date}_over70_symptoms.xlsx", date = date(latest_extract_date())))
+)
 
-tibble(Info = c("Extract Date", "Earliest admission", "Latest admission", "Admission 1st Quartile", "Admission 3rd Quartile"), 
-       value = c(date(latest_extract_date()), min(topline$hostdat), max(topline$hostdat), summary(topline$hostdat)[2], summary(topline$hostdat)[5]))
+# Tidy up table output to percentags
+tables <- tables %>% 
+  map(~ mutate_at(.x, vars(starts_with("prop_")), ~ scales::percent(.)) %>% 
+        rename_at(vars(starts_with("n_")), ~ str_replace(., "^n_(.+?)$", "Yes \\1")) %>% 
+        rename_at(vars(starts_with("total_")), ~ str_replace(., "^total_(.+?)$", "Total \\1")) %>% 
+        rename_at(vars(starts_with("prop_")), ~ str_replace(., "^prop_(.+?)$", "Percentage \\1")) %>% 
+        rename_at(vars(matches("Significant")), ~ "Significant Change?") %>% 
+        rename_at(vars(matches("Direction")), ~ "Direction of change (if significant)")
+      )
 
-ggsave(str_glue("output/{date}_over70_significant_symptoms.png", 
-                date = date(latest_extract_date())), 
-       plt_significant_symptoms)
-ggsave(str_glue("output/{date}_over70_clusters.png", 
-                date = date(latest_extract_date())), 
-       plt_clusters)
+write_xlsx(x = tables,
+           path = str_glue("output/{date}_over70_symptoms.xlsx", 
+                           date = date(latest_extract_date())))
+
+ggsave(str_glue("output/{date}_over70_Significant_symptoms.png",
+                date = date(latest_extract_date())),
+       plt_Significant_symptoms,
+       width = 12,
+       height = 9)
+
+ggsave(str_glue("output/{date}_over70_clusters.png",
+                date = date(latest_extract_date())),
+       plt_clusters,
+       width = 9,
+       height = 9)
 
        

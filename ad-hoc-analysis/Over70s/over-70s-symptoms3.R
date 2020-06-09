@@ -3,6 +3,13 @@
 source("extract-data/00_setup-environment.R")
 
 # Read data ---------------------------------------------------------------
+update <- "No"
+
+if (date(latest_extract_date()) < (today() - days(3))| update == "Yes") {
+  message("local extract is older than RAPID-ECOSS file")
+  source("extract-data/01_get-scottish-data.R")
+  source("extract-data/02_clean-data.R")
+}
 
 scot_data <- here("data", str_glue("{date}_scot-data-clean.rds", date = latest_extract_date())) %>%
   read_rds()

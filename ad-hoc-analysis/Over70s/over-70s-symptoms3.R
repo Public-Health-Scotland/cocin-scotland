@@ -232,23 +232,23 @@ tbl_all_symptoms <- symptom_data %>%
   ) %>%
   filter(`prop_On or after 30th April` != 0) %>%
   rowwise() %>%
-  mutate(significant = if_else(prop.test(
+  mutate(Significant = if_else(prop.test(
     x = c(`n_Before 30th April`, `n_On or after 30th April`),
     n = c(n_before, n_after)
   )$p.value < 0.5,
   "Yes",
   "No"
   )) %>%
-  mutate(direction = if_else(significant == "Yes",
+  mutate(Direction = if_else(Significant == "Yes",
     if_else(`prop_Before 30th April` > `prop_On or after 30th April`,
-      "decrease",
-      "increase"
+      "Decrease",
+      "Increase"
     ),
     NA_character_
   )) %>%
   filter(Status == "Yes") %>% 
   select(-Status) %>% 
-  arrange(desc(significant), desc(`n_Before 30th April`))
+  arrange(desc(Significant), desc(`n_Before 30th April`))
 
 tbl_all_symptoms_ex_unknown <- symptom_data %>%
   filter(Status != "Unknown") %>% 
@@ -264,23 +264,23 @@ tbl_all_symptoms_ex_unknown <- symptom_data %>%
   ) %>%
   filter(`prop_On or after 30th April` != 0) %>%
   rowwise() %>%
-  mutate(significant = if_else(prop.test(
+  mutate(Significant = if_else(prop.test(
     x = c(`n_Before 30th April`, `n_On or after 30th April`),
     n = c(n_before, n_after)
   )$p.value < 0.5,
   "Yes",
   "No"
   )) %>%
-  mutate(direction = if_else(significant == "Yes",
+  mutate(Direction = if_else(Significant == "Yes",
                              if_else(`prop_Before 30th April` > `prop_On or after 30th April`,
-                                     "decrease",
-                                     "increase"
+                                     "Decrease",
+                                     "Increase"
                              ),
                              NA_character_
   )) %>%
   filter(Status == "Yes") %>% 
   select(-Status) %>% 
-  arrange(desc(significant), desc(`n_Before 30th April`))
+  arrange(desc(Significant), desc(`n_Before 30th April`))
 
 tbl_clusters <- cluster_data %>%
   mutate(total = if_else(admission == "Before 30th April", n_before, n_after)) %>% 
@@ -294,34 +294,34 @@ tbl_clusters <- cluster_data %>%
   ) %>%
   filter(`prop_On or after 30th April` != 0) %>%
   rowwise() %>%
-  mutate(significant = if_else(prop.test(
+  mutate(Significant = if_else(prop.test(
     x = c(`n_Before 30th April`, `n_On or after 30th April`),
     n = c(n_before, n_after)
   )$p.value < 0.5,
   "Yes",
   "No"
   )) %>%
-  mutate(direction = if_else(significant == "Yes",
+  mutate(Direction = if_else(Significant == "Yes",
                              if_else(`prop_Before 30th April` > `prop_On or after 30th April`,
-                                     "decrease",
-                                     "increase"
+                                     "Decrease",
+                                     "Increase"
                              ),
                              NA_character_
   )) %>%
   filter(Status == "Yes") %>% 
   select(-Status) %>% 
-  arrange(desc(significant), desc(`n_Before 30th April`))
+  arrange(desc(Significant), desc(`n_Before 30th April`))
 
 
 # Plots -------------------------------------------------------------------
 
-plt_significant_symptoms <- symptom_data %>%
+plt_Significant_symptoms <- symptom_data %>%
   # Status a factor ordered by levels == Yes value
   mutate(
     Symptom = factor(Symptom, symp_data_levels_order),
     Status = factor(Status, c("Yes", "Unknown", "No")),
   ) %>% 
-  filter(Symptom %in% (tbl_all_symptoms %>% filter(significant == "Yes") %>% pull(Symptom))) %>% 
+  filter(Symptom %in% (tbl_all_symptoms %>% filter(Significant == "Yes") %>% pull(Symptom))) %>% 
   ggplot(aes(x = admission, y = n, fill = fct_rev(Status))) +
   geom_col(position = "fill") +
   theme_minimal() +
@@ -329,7 +329,7 @@ plt_significant_symptoms <- symptom_data %>%
   ylab("Proportion") +
   scale_x_discrete("Admission period") +
   scale_fill_brewer("") +
-  scale_y_continuous("Patients with \nsymptom (%)", labels = scales::percent) +
+  scale_y_continuous("Patients with symptom (%)", labels = scales::percent) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   facet_grid(~Symptom, labeller = labeller(Symptom = label_wrap_gen(10)))
 plt_significant_symptoms
@@ -343,7 +343,7 @@ plt_clusters <- cluster_data %>%
   ylab("Proportion") +
   scale_x_discrete("Admission period") +
   scale_fill_manual("", values = (c("#deebf7", "#3182bd"))) +
-  scale_y_continuous("Patients with any \nsymptom in \ncluster (%)", labels = scales::percent) +
+  scale_y_continuous("Patients with any symptom \nin cluster (%)", labels = scales::percent) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   facet_grid(~Cluster, labeller = labeller(Cluster = label_wrap_gen(10)))
 plt_clusters
@@ -354,7 +354,7 @@ library(writexl)
 
 tbl_overview <- tibble(
   Info = c("Extract Date", "Earliest admission", "Latest admission", "Admission 1st Quartile", "Admission 3rd Quartile"),
-  value = c(date(latest_extract_date()), min(topline$hostdat), max(topline$hostdat), summary(topline$hostdat)[2], summary(topline$hostdat)[5])
+  Value = c(date(latest_extract_date()), min(topline$hostdat), max(topline$hostdat), summary(topline$hostdat)[2], summary(topline$hostdat)[5])
 )
 
 write_xlsx(x = list(

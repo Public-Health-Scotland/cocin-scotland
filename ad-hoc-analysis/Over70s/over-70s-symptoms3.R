@@ -21,6 +21,8 @@ topline <- scot_data %>%
     subjid,
     age,
     hostdat,
+    dsstdat,
+    corna_mbcat,
     fever_ceoccur_v2:bleed_ceoccur_v2,
     -ageusia_ceoccur_v2,
     ageusia_ceoccur_v2,
@@ -90,7 +92,29 @@ topline <- scot_data %>%
 n_before <- topline %>% filter(admission == "Before 30th April") %>% nrow()
 n_after <- topline %>% filter(admission == "On or after 30th April") %>% nrow()
 
+n_before_pos <- topline %>% filter(admission == "Before 30th April") %>% filter(corna_mbcat == "YES - Confirmed") %>% nrow()
+n_after_pos <- topline %>% filter(admission == "On or after 30th April") %>% filter(corna_mbcat == "YES - Confirmed") %>% nrow()
+
+n_before_unknown <- topline %>% filter(admission == "Before 30th April") %>% filter_at(vars(Fever:Anosmia), all_vars(. == "Unknown")) %>% nrow()
+n_after_unknown <- topline %>% filter(admission == "On or after 30th April") %>% filter_at(vars(Fever:Anosmia), all_vars(. == "Unknown")) %>% nrow()
+
+
+earliest_recruitment <- topline %>% filter(dsstdat >= dmy(01012020)) %>% pull(dsstdat) %>% min()
+latest_recruitment <- topline %>% pull(dsstdat) %>% max(na.rm = TRUE)
+
 ggplot(topline, aes(x = hostdat)) +
+  geom_histogram(binwidth = 1) +
+  geom_vline(xintercept = ymd("2020-04-30")) +
+  theme_minimal()
+
+ggplot(topline %>% 
+         select(dsstdat, Ageusia, Anosmia) %>% 
+         pivot_longer(cols = c(Ageusia, Anosmia),
+                      names_to = "Symptom", 
+                      values_to = "Status") %>% 
+         filter(Status != "Unknown"), 
+       aes(x = dsstdat,
+           fill = Symptom)) +
   geom_histogram(binwidth = 1) +
   geom_vline(xintercept = ymd("2020-04-30")) +
   theme_minimal()

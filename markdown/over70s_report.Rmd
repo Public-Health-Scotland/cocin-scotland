@@ -1,0 +1,539 @@
+---
+title: "Over 70s analysis"
+author: "James McMahon"
+date: "1 June 2020"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+classoption: landscape
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE
+)
+library(knitr)
+library(ggcorrplot)
+
+scot_data <- here("data", str_glue("{date}_scot-data-clean.rds", date = latest_extract_date())) %>%
+  read_rds()
+
+if (!exists("topline")) { # Takes a while to run
+  topline <- scot_data %>%
+    select(subjid, 
+           age, 
+           cestdat, 
+           fever_ceoccur_v2:bleed_ceoccur_v2, 
+           ageusia_ceoccur_v2, 
+           anosmia_ceoccur_v2) %>%
+    mutate_at(vars(ageusia_ceoccur_v2, anosmia_ceoccur_v2), ~ factor(.) %>% fct_relabel(~c("YES", "NO", "Unknown"))) %>% 
+    rename(
+      "Fever" = fever_ceoccur_v2,
+      "Cough" = cough_ceoccur_v2,
+      "Cough (sputum)" = coughsput_ceoccur_v2,
+      "Cough (blood)" = coughhb_ceoccur_v2,
+      "Sore throat" = sorethroat_ceoccur_v2,
+      "Runny nose" = runnynose_ceoccur_v2,
+      "Ear pain" = earpain_ceoccur_v2,
+      "Wheeze" = wheeze_ceoccur_v2,
+      "Chest pain" = chestpain_ceoccur_v2,
+      "Muscle ache" = myalgia_ceoccur_v2,
+      "Joint pain" = jointpain_ceoccur_v2,
+      "Fatigue" = fatigue_ceoccur_v2,
+      "Shortness of breath" = shortbreath_ceoccur_v2,
+      "Lower chest wall indrawing" = lowerchest_ceoccur_v2,
+      "Headache" = headache_ceoccur_v2,
+      "Confusion" = confusion_ceoccur_v2,
+      "Seizures" = seizures_cecoccur_v2,
+      "Abdominal pain" = abdopain_ceoccur_v2,
+      "Nausa/vomiting" = vomit_ceoccur_v2,
+      "Diarrhoea" = diarrhoea_ceoccur_v2,
+      "Conjunctivitis" = conjunct_ceoccur_v2,
+      "Skin rash" = rash_ceoccur_v2,
+      "Skin ulcers" = skinulcers_ceoccur_v2,
+      "Lymphadenopathy" = lymp_ceoccur_v2,
+      "Bleeding (Haemorrhage)" = bleed_ceoccur_v2,
+      "Ageusia" = ageusia_ceoccur_v2,
+      "Anosmia" = anosmia_ceoccur_v2
+    ) %>%
+    group_by(subjid) %>%
+    summarise_all(~ first(na.omit(.))) %>%
+    filter(age >= 70, !is.na(cestdat)) %>%
+    mutate(admission = if_else(cestdat < "2020-04-30",
+      "Before 30th April",
+      "On or after 30th April"
+    ) %>%
+      as_factor()) %>%
+    left_join(scot_data %>%
+      filter_at(vars(fever_ceoccur_v2:bleed_ceoccur_v2), any_vars(. == "YES")) %>%
+      mutate(any_symptoms = "YES") %>%
+      select(subjid, any_symptoms),
+    by = "subjid"
+    ) %>%
+    mutate(any_symptoms = recode(any_symptoms, .missing = "NO")) %>%
+    rename("Any Symptoms" = any_symptoms)
+}
+
+
+symptom_data <- topline %>%
+  pivot_longer(
+    cols = c(Fever:"Bleeding (Haemorrhage)", "Any Symptoms"),
+    names_to = "Symptom",
+    values_to = "Status",
+    values_drop_na = TRUE
+  ) %>%
+  mutate(Status = recode(Status, "YES" = "Yes", "NO" = "No")) %>%
+  group_by(admission, Symptom) %>%
+  count(Status) %>%
+  ungroup()
+
+symp_data_levels_order <-
+  symptom_data %>%
+  filter(
+    Status == "Yes",
+    admission == "Before 30th April"
+  ) %>%
+  arrange(desc(n)) %>%
+  pull(Symptom)
+```
+
+## Summary
+```{r summary_table}
+if (!exists("summary_table")) {
+  summary_table <- scot_data %>%
+    group_by(subjid) %>%
+    mutate(
+      over70 = first(na.omit(age)) >= 70,
+      adm_30apr = first(na.omit(hostdat) >= dmy(30042020))
+    ) %>%
+    mutate(
+      status =
+        case_when(
+          over70 & adm_30apr ~ "over70_after30apr",
+          over70 & !adm_30apr ~ "over70_before30apr",
+          TRUE ~ "other_patients"
+        )
+    ) %>%
+    group_by(hb_name, location_name, status) %>%
+    summarise(n = n_distinct(subjid)) %>%
+    ungroup() %>%
+    pivot_wider(names_from = status, values_from = n, values_fill = 0) %>%
+    mutate(total_patients = rowSums(select_if(., is.numeric)))
+}
+
+kable(summary_table %>% arrange(hb_name, location_name))
+```
+
+## Changes table
+
+This table shows all symptoms and responses and looks at the change in proportion before and after 30th April. Significant changes are highlighted.
+``` {r symt_table_raw}
+sympt_table <- symptom_data %>%
+  group_by(admission, Symptom) %>%
+  mutate(total = sum(n, na.rm = TRUE)) %>%
+  group_by(admission, Symptom, Status) %>%
+  mutate(prop = n / total) %>%
+  ungroup() %>%
+  pivot_wider(
+    names_from = admission,
+    values_from = c(n, total, prop),
+    values_fill = 0
+  ) %>%
+  filter(`prop_On or after 30th April` != 0) %>%
+  rowwise() %>%
+  mutate(significant = if_else(prop.test(
+    x = c(`n_Before 30th April`, `n_On or after 30th April`),
+    n = c(`total_Before 30th April`, `total_On or after 30th April`)
+  )$p.value < 0.5,
+  "Yes",
+  "No"
+  )) %>%
+  mutate(direction = if_else(significant == "Yes",
+    if_else(`prop_Before 30th April` > `prop_On or after 30th April`,
+      "decrease",
+      "increase"
+    ),
+    NA_character_
+  )) %>%
+  select(-starts_with("total"))
+
+kable(sympt_table)
+```
+
+This table treats No and Unknown as No and again analyses the difference in proportions.
+
+``` {r symt_table_clean}
+sympt_table <- symptom_data %>%
+  mutate(Status = recode(Status, "Unknown" = "No")) %>%
+  group_by(admission, Symptom, Status) %>%
+  summarise(n = sum(n)) %>%
+  group_by(admission, Symptom) %>%
+  mutate(total = sum(n, na.rm = TRUE)) %>%
+  group_by(admission, Symptom, Status) %>%
+  mutate(prop = n / total) %>%
+  ungroup() %>%
+  pivot_wider(
+    names_from = admission,
+    values_from = c(n, total, prop),
+    values_fill = 0
+  ) %>%
+  filter(`prop_On or after 30th April` != 0) %>%
+  rowwise() %>%
+  mutate(significant = if_else(prop.test(
+    x = c(`n_Before 30th April`, `n_On or after 30th April`),
+    n = c(`total_Before 30th April`, `total_On or after 30th April`)
+  )$p.value < 0.5,
+  "Yes",
+  "No"
+  )) %>%
+  mutate(direction = if_else(significant == "Yes",
+    if_else(`prop_Before 30th April` > `prop_On or after 30th April`,
+      "decrease",
+      "increase"
+    ),
+    NA_character_
+  )) %>%
+  select(-starts_with("total")) %>%
+  filter(Status == "Yes")
+
+kable(sympt_table)
+```
+
+## Proportions Bar charts (all symptoms)
+
+``` {r simple_chart}
+sympt_bar_chart <- symptom_data %>%
+  mutate(Symptom = factor(Symptom, symp_data_levels_order)) %>%
+  ggplot(aes(x = Symptom, y = n, fill = Status)) +
+  geom_col(position = "fill") +
+  theme_minimal() +
+  theme(legend.position = "top") +
+  ylab("Proportion") +
+  scale_fill_brewer() +
+  scale_y_continuous("Proportion of patients with symptom (%)", labels = scales::percent) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  facet_grid("admission")
+
+sympt_bar_chart2 <- symptom_data %>%
+  mutate(Symptom = factor(Symptom, symp_data_levels_order)) %>%
+  ggplot(aes(x = admission, y = n, fill = Status)) +
+  geom_col(position = "fill") +
+  theme_minimal() +
+  theme(legend.position = "top") +
+  ylab("Proportion") +
+  scale_x_discrete() +
+  scale_fill_brewer() +
+  scale_y_continuous("Proportion of patients with symptom (%)", labels = scales::percent) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  facet_grid(~Symptom)
+
+sympt_bar_chart
+sympt_bar_chart2
+```
+
+``` {r UoE_sympt_chart}
+uoe_sympt_plot <- symptom_data %>%
+  # Status a factor ordered by levels == Yes value
+  mutate(
+    Symptom = factor(Symptom, symp_data_levels_order),
+    Status = factor(Status, c("Yes", "Unknown", "No"))
+  ) %>%
+  ggplot(aes(x = fct_rev(Symptom), y = n, fill = fct_rev(Status))) +
+  geom_col(position = "fill") +
+  xlab("") +
+  scale_y_continuous("Proportion of patients with symptom (%)", labels = scales::percent) +
+  scale_fill_manual("", values = c("dark grey", "light grey", "black")) +
+  coord_flip() +
+  theme_classic() +
+  theme(legend.position = "top") +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  facet_grid(cols = vars(admission))
+
+uoe_sympt_plot2 <- symptom_data %>%
+  # Status a factor ordered by levels == Yes value
+  mutate(
+    Symptom = factor(Symptom, symp_data_levels_order),
+    Status = factor(Status, c("Yes", "Unknown", "No"))
+  ) %>%
+  ggplot(aes(x = fct_rev(admission), y = n, fill = fct_rev(Status))) +
+  geom_col(position = "fill") +
+  xlab("") +
+  scale_y_continuous("Proportion of patients with symptom (%)", labels = scales::percent) +
+  scale_fill_manual("", values = c("dark grey", "light grey", "black")) +
+  coord_flip() +
+  theme_classic() +
+  theme(legend.position = "top") +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  facet_grid(rows = vars(Symptom))
+
+uoe_sympt_plot
+uoe_sympt_plot2
+```
+
+
+
+``` {r make_clusters}
+if(!exists("symp_clusters")) {
+symp_clusters <- symptom_data %>%
+  mutate(
+    symptom_cluster = case_when(
+      Symptom %in% c("Ear pain", "Confusion", "Seizures", "Skin rash", "Skin ulcers", "Conjunctivitis", "Bleeding (Haemorrhage)", "Headache") ~ "Neurocutaneous",
+      Symptom %in% c("Fatigue", "Muscle ache", "Lymphadenopathy", "Fever") ~ "Generalised",
+      Symptom %in% c("Diarrhoea", "Nausa/vomiting", "Abdominal pain", "Joint pain") ~ "Gastrointestinal",
+      Symptom %in% c("Cough", "Cough (blood)", "Cough (sputum)", "Wheeze", "Shortness of breath", "Sore throat", "Chest pain", "Lower chest wall indrawing", "Runny nose") ~ "Respiratory",
+      TRUE ~ "Any"
+    )
+  ) %>% 
+  bind_rows(
+    filter(., Symptom %in% c("Cough", "Cough (blood)", "Cough (sputum)", "Fever", "Ageusia", "Anosmia")) %>% mutate(symptom_cluster = "Key")
+  ) %>% 
+  group_by(symptom_cluster, admission, Status) %>% 
+  summarise(n = sum(n)) %>% 
+  ungroup()
+}
+
+cluster_data_levels_order <-
+  symp_clusters %>%
+  filter(
+    Status == "Yes",
+    admission == "Before 30th April"
+  ) %>%
+  mutate(order = if_else(symptom_cluster == "Any Symptoms", 0, 1)) %>% 
+  arrange(order, desc(n)) %>%
+  pull(symptom_cluster)
+      
+```
+
+# Clustered analyis
+The following analysis clusters the symptoms into groups which often occur together, these groups are:
+
+ - Neurocutaneous Symptoms  
+	 * Ear pain  
+	 * Confusion  
+	 * Seizures
+	 * Skin rash  
+	 * Skin ulcers  
+	 * Conjunctivitis  
+	 * Bleeding (Haemorrhage)  
+	 * Headache
+ - Generalised Symptoms
+	 - Fatigue
+	 - Muscle ache
+	 - Lymphadenopathy
+	 - Fever
+ - Gastrointestinal Symptoms
+	 - Diarrhoea
+	 - Nausa/vomiting
+	 - Abdominal pain
+	 - Joint pain
+ - Respiratory Symptoms
+	 - Cough (All types)
+	 - Wheeze
+	 - Shortness of breath
+	 - Sore throat
+	 - Chest pain
+	 - Lower chest wall indrawing
+	 - Runny nose
+	 
+There is also an additional group of 'key symptoms' which overlap with the other clustered groups
+
+ - Key Symptoms
+	 - Cough (All types)
+	 - Fever
+	 - Anosmisa
+	 - Ageusia
+
+## Significance tables
+```{r symt_table_raw_clustered}
+sympt_table_clustered <- symp_clusters %>%
+  group_by(admission, symptom_cluster) %>%
+  mutate(total = sum(n, na.rm = TRUE)) %>%
+  group_by(admission, symptom_cluster, Status) %>%
+  mutate(prop = n / total) %>%
+  ungroup() %>%
+  pivot_wider(
+    names_from = admission,
+    values_from = c(n, total, prop),
+    values_fill = 0
+  ) %>%
+  filter(`prop_On or after 30th April` != 0) %>%
+  rowwise() %>%
+  mutate(significant = if_else(prop.test(
+    x = c(`n_Before 30th April`, `n_On or after 30th April`),
+    n = c(`total_Before 30th April`, `total_On or after 30th April`)
+  )$p.value < 0.5,
+  "Yes",
+  "No"
+  )) %>%
+  mutate(direction = if_else(significant == "Yes",
+    if_else(`prop_Before 30th April` > `prop_On or after 30th April`,
+      "decrease",
+      "increase"
+    ),
+    NA_character_
+  )) %>%
+  select(-starts_with("total"))
+
+kable(sympt_table_clustered)
+```
+
+This table treats No and Unknown as No and again analyses the difference in proportions.
+
+``` {r symt_table_clean_clustered}
+sympt_table_clustered <- symp_clusters %>%
+  mutate(Status = recode(Status, "Unknown" = "No")) %>%
+  group_by(admission, symptom_cluster, Status) %>%
+  summarise(n = sum(n)) %>%
+  group_by(admission, symptom_cluster) %>%
+  mutate(total = sum(n, na.rm = TRUE)) %>%
+  group_by(admission, symptom_cluster, Status) %>%
+  mutate(prop = n / total) %>%
+  ungroup() %>%
+  pivot_wider(
+    names_from = admission,
+    values_from = c(n, total, prop),
+    values_fill = 0
+  ) %>%
+  filter(`prop_On or after 30th April` != 0) %>%
+  rowwise() %>%
+  mutate(significant = if_else(prop.test(
+    x = c(`n_Before 30th April`, `n_On or after 30th April`),
+    n = c(`total_Before 30th April`, `total_On or after 30th April`)
+  )$p.value < 0.5,
+  "Yes",
+  "No"
+  )) %>%
+  mutate(direction = if_else(significant == "Yes",
+    if_else(`prop_Before 30th April` > `prop_On or after 30th April`,
+      "decrease",
+      "increase"
+    ),
+    NA_character_
+  )) %>%
+  select(-starts_with("total")) %>%
+  filter(Status == "Yes")
+
+kable(sympt_table_clustered)
+```
+
+
+## Frequency charts
+``` {r simple_chart_clustered}
+sympt_bar_chart_clustered <- symp_clusters %>%
+  mutate(symptom_cluster = factor(symptom_cluster, cluster_data_levels_order)) %>%
+  ggplot(aes(x = symptom_cluster, y = n, fill = Status)) +
+  geom_col(position = "fill") +
+  theme_minimal() +
+  theme(legend.position = "top") +
+  ylab("Proportion") +
+  scale_fill_brewer() +
+  scale_y_continuous("Proportion of patients with symptom (%)", labels = scales::percent) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  facet_grid("admission")
+
+sympt_bar_chart2_clustered <- symp_clusters %>%
+  mutate(symptom_cluster = factor(symptom_cluster, cluster_data_levels_order)) %>%
+  ggplot(aes(x = admission, y = n, fill = Status)) +
+  geom_col(position = "fill") +
+  theme_minimal() +
+  theme(legend.position = "top") +
+  ylab("Proportion") +
+  scale_x_discrete() +
+  scale_fill_brewer() +
+  scale_y_continuous("Proportion of patients with symptom (%)", labels = scales::percent) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  facet_grid(~symptom_cluster, labeller = labeller(groupwrap = label_wrap_gen(10)))
+
+sympt_bar_chart_clustered
+sympt_bar_chart2_clustered
+```
+
+``` {r UoE_sympt_chart_clustered}
+uoe_sympt_plot_clustered <- symp_clusters %>%
+  # Status a factor ordered by levels == Yes value
+  mutate(
+    symptom_cluster = factor(symptom_cluster, cluster_data_levels_order),
+    Status = factor(Status, c("Yes", "Unknown", "No"))
+  ) %>%
+  ggplot(aes(x = fct_rev(symptom_cluster), y = n, fill = fct_rev(Status))) +
+  geom_col(position = "fill") +
+  xlab("") +
+  scale_y_continuous("Proportion of patients with symptom (%)", labels = scales::percent) +
+  scale_fill_manual("", values = c("dark grey", "light grey", "black")) +
+  coord_flip() +
+  theme_classic() +
+  theme(legend.position = "top") +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  facet_grid(cols = vars(admission))
+
+uoe_sympt_plot2_clustered <- symp_clusters %>%
+  # Status a factor ordered by levels == Yes value
+  mutate(
+    symptom_cluster = factor(symptom_cluster, cluster_data_levels_order),
+    Status = factor(Status, c("Yes", "Unknown", "No"))
+  ) %>%
+  ggplot(aes(x = fct_rev(admission), y = n, fill = fct_rev(Status))) +
+  geom_col(position = "fill") +
+  xlab("") +
+  scale_y_continuous("Proportion of patients with symptom (%)", labels = scales::percent) +
+  scale_fill_manual("", values = c("dark grey", "light grey", "black")) +
+  coord_flip() +
+  theme_classic() +
+  theme(legend.position = "top") +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  facet_grid(rows = vars(symptom_cluster), , labeller = labeller(groupwrap = label_wrap_gen(10)))
+
+uoe_sympt_plot_clustered
+uoe_sympt_plot2_clustered
+```
+
+## Symptom corrolation charts
+
+```{r corr_charts}
+# UoE corr plot
+symp.cors_before <- topline %>%
+  filter(str_detect(admission, "Before")) %>%
+  select(-subjid, -age, -cestdat, -admission) %>%
+  mutate_all(as_factor) %>%
+  mutate_all(fct_recode, NULL = "Unknown") %>%
+  mutate_all(as.numeric) %>%
+  cor(use = "pairwise.complete.obs") %>%
+  .[, colSums(is.na(.)) != nrow(.)] %>%
+  .[rowSums(is.na(.)) != ncol(.), ]
+
+symp.cors_before[is.na(symp.cors_before)] <- 0
+
+symp.cors_after <- topline %>%
+  filter(str_detect(admission, "On")) %>%
+  select(-subjid, -age, -cestdat, -admission) %>%
+  mutate_all(as_factor) %>%
+  mutate_all(fct_recode, NULL = "Unknown") %>%
+  mutate_all(as.numeric) %>%
+  cor(use = "pairwise.complete.obs") %>%
+  .[, colSums(is.na(.)) != nrow(.)] %>%
+  .[rowSums(is.na(.)) != ncol(.), ]
+
+symp.cors_after[is.na(symp.cors_after)] <- 0
+
+before_cor_plot <- symp.cors_before %>%
+  ggcorrplot(
+    hc.order = TRUE,
+    outline.color = "white",
+    colors = c("#6D9EC1", "white", "#E46726")
+  ) +
+  ggtitle("Before 30th April")
+
+after_cor_plot <- symp.cors_after %>%
+  ggcorrplot(
+    hc.order = TRUE,
+    outline.color = "white",
+    colors = c("#6D9EC1", "white", "#E46726")
+  ) +
+  ggtitle("On or after 30th April")
+
+before_cor_plot
+after_cor_plot
+```

@@ -1,7 +1,7 @@
 ---
-title: "Draft-Over70 Summary"
-author: "James McMahon"
-date: "`r format(Sys.Date(), '%A, %d %B %Y') `"
+title: "COVID-19 symptom complex analysis in the Over 70s"
+author: "James McMahon, Georgia Ladbury, Angela Rose, Diogo Marques"
+date: "`r format(Sys.Date(), '%d %B %Y')`"
 output: word_document
 ---
 
@@ -13,45 +13,73 @@ knitr::opts_chunk$set(
   message = FALSE
 )
 ```
+## Executive summary
+ * A policy change for testing strategy for the over 70 age group was announced on 28 April 2020 in Scotland, such that all over 70s should be tested for COVID-19 by default on admission to hospital.
+ * The data analysed were extracted from the COVID-19 Clinical Information Network (CO-CIN) dataset.
+ * The analysis presented explores whether there are differences in symptomatology between Scottish COVID-19 hospital inpatients aged 70 or over before and after the policy change.
+ * Following policy change:
+  * There was a statistically significant increase in the number of patients who had no symptoms at admission. 
+  * Most symptoms show a decrease in the proportion of patients with them at admission, however not all differences are statistically significant. The only individual symptom which showed a significant increase was headache. 
+  * There was an increased proportion of patients presenting without the “typical” COVID-19 respiratory/key symptoms This change was most apparent for the neurocutaneous cluster with an increase from 4.7% to 12.9% (p = 0.01).  
+  * Groups not suffering from “typical” COVID-19 disease presentation, or who are asymptomatic for COVID-19 but presenting with symptoms for a co-morbid condition, may have been under-ascertained in the past, as they were not clinically suspected.
+  * The decrease in proportion of individuals with “typical” COVID-19 symptoms following policy change is in line with increased case ascertainment.
+  
+<div style="page-break-after: always"></div>
 
-## Introduction
+## Aim of analysis
+A policy change for testing strategy for the over 70 age group was announced on 28 April 2020 in Scotland, such that all over 70s should be tested for COVID-19 by default on admission to hospital. Before this, hospitalized patients in this age group would only have been tested on the discretion of a clinician (e.g. suspicion of COVID-19 disease/close contact to a known case). The analysis presented explores whether there are differences in symptomatology between Scottish COVID-19 hospital inpatients aged 70 or over before and after the policy change.
 
-** COCIN INTRO **
 
-The extract was taken from COCIN on `r date(latest_extract_date())` at this time there were **`r n_distinct(scot_data$subjid)`**  patients in COCIN.
+## Background
+The data analysed were extracted from the COVID-19 Clinical Information Network (CO-CIN) dataset. CO-CIN is an international multi-site research project run by the University of Oxford and University of Edinburgh which gathers detailed epidemiological and clinical information on suspected and laboratory confirmed hospitalised COVID-19 cases. Approximately 23 Scottish hospitals across 11 health boards contribute to CO-CIN, but not all hospitalized Covid-19 cases are captured in the dataset. 
 
-This analysis is to explore any differences in symptomatology between two cohorts of Scottish patients with a recorded age of 70 or over.
+At the time of data extract (`r format(date(latest_extract_date()), '%d %B %Y')`) there were `r n_distinct(scot_data$subjid)` patients of all ages from Scottish hospitals in CO-CIN, the first of whom was recruited on `r format(earliest_recruitment, '%d %B %Y')` and the last on `r format(latest_recruitment, '%d %B %Y')`. We estimate that CO-CIN recruited patients count for approximately 44% (2440/5506) of all hospitalized laboratory confirmed cases in Scotland.
 
-Cohort 1: Patients admitted before 30th April 2020 (**N = `r n_before`**)
+**For patients with a recorded age of 70 or over:**
 
-Cohort 2: Patients admitted on or after 30th April 2020 (**N = `r n_after`**)
+**Cohort 1 -** Admitted before 30 April 2020: **N = `r n_before`**; `r n_before_pos` (`r scales::percent(n_before_pos/n_before)`) lab-confirmed
 
-The first of these patients was recruited <nobr>`r earliest_recruitment`</nobr> and the last was recruited <nobr>`r latest_recruitment`</nobr>. The number of confirmed cases is `r n_before_pos` (`r scales::percent(n_before_pos/n_before)`) and `r n_after_pos` (`r scales::percent(n_after_pos/n_after)`) in Cohort 1 and 2 respectively, the remainder are not confirmed but are strongly suspected, the confirmed number is likely to be an undercount due to data completeness / timeliness.
+**Cohort 1 -** Admitted on or after 30 April 2020: **N = `r n_after`**; `r n_after_pos` (`r scales::percent(n_after_pos/n_after)`) lab-confirmed
 
-The testing strategy for the over 70 age group was changed on April 30th 2020 such that all over 70s should be tested for COVID-19 by default on admission to hospital, admissions before April 30th would only have been tested on the discretion of a clinician and suspicion of COVID-19 disease.
+Note that any non-laboratory confirmed cases are nonetheless strongly suspected, and the number of laboratory confirmed cases is likely to be an undercount due to data completeness/timeliness.
+
+Information on symptoms in CO-CIN are entered by research nurses abstracted from patient clinical notes. Symptoms may be entered as "Yes", "No" or "Unknown"; it is not clear from the dataset if "Unknown" means the patient did not experience that symptom, or whether the patient did experience it but it was not captured in the notes. For this reason, in the analyses below patients reporting "Unknown" for a particular symptom have been excluded, except for the "No symptoms" category where exclusion would lead to numbers too small to analyse.
+
 
 ## Individual symptoms
-In the following table, all recorded symptoms are listed with the numbers of patients who had the symptom on admission a notable number have "Unknown" recorded for the symptom status, these have been excluded. Therefore, the percentages are '% of patients with symptom out of all patients with reliable data recorded for that symptom'. There are some patients who have 'Unknown' recorded for all symptoms, `r n_before_unknown` (`r scales::percent(n_before_unknown/n_before)`) and `r n_after_unknown` (`r scales::percent(n_after_unknown/n_after)`) in Cohort 1 and 2 respectively.
+
+### Method
+
+In the following table, all recorded symptoms are listed with the numbers of patients who had the symptom on admission. The percentages presented are total patients with that symptom (i.e. recorded as “Yes”) divided by total patients with reliable data recorded for that symptom (i.e. recorded “Yes” or “No”).
+
+For each symptom status, a notable number have "Unknown" recorded and have been excluded in analysis of that symptom.  There are some patients who have 'Unknown' recorded for all symptoms, `r n_before_unknown` (`r scales::percent(n_before_unknown/n_before)`) and `r n_after_unknown` (`r scales::percent(n_after_unknown/n_after)`) in Cohort 1 and 2 respectively.
+
+The category “No symptoms presenting” has been calculated in two ways: conservatively by only including patients who answered “No” for every symptom, and more sensitively by including patients who answered “No” or “Unknown” for all symptoms. The results for both the conservative and sensitive definitions are presented in the table.
+
+Note that ageusia (loss of sense of taste) and anosmia (loss of sense of smell) were not included in the CO-CIN data collection until mid-March. Therefore, there are small numbers in both cohorts and statistical comparison will not be meaningful as differences will mainly reflect reporting artefact.
+
+### Results
+
+Table 1 – Numbers and proportions of hospitalised patients in Scotland aged 70+ reporting a particular symptom prior to and after 30 April 2020
 
 **TABLE HERE**
+*Only added to CO-CIN dataset from mid-March 2020
 
-Information on symptoms in COCIN are entered by research nurses looking at patient clinical notes. Symptoms may be entered as "Yes", "No" or "Unknown"; it is not clear if "Unknown" means the patient did not experience that symptom, or whether the patient did experience it but it is not captured in the notes. For this reason, in the analyses below patients reporting "Unknown" for a particular symptom have been excluded, except for "no symptoms" where exclusion would lead to numbers too small to analyse.
-
-*The numbers for 'No symptoms presenting' represent the upper and lower bound for this group depending on whether 'Unknown' is treated as the patient having a particular symptom or not.
-
-Most symptoms show a decrease in the proportion of patients with it at admission, however not all differences are statistically significant, this could be due to the small numbers in some groups.
-
-The only individual symptom which showed a significant increase was 'Headache'. There was also a significant increase in the number of patients who had no symptoms at admission.
-
-Note that Ageusia (loss of sense of taste) and Anosmia (loss of sense of smell) were not included in the COCIN data collection until mid-March and therefore have small numbers in both cohorts.
-
-This bar chart visualises the change in proportion for the symptoms where the change was significant.
+Figure 1 – Proportions of hospitalised patients in Scotland aged 70+ experiencing particular symptoms where the changes in proportion of those symptoms prior to and after 30 April 2020 are statistically significant
 
 ```{r symptom_bar, fig.width = 11, fig.height = 5}
 plt_Significant_symptoms
 ```
 
-## Symptom Clusters
+### Interpretation
+There was a significant increase in the number of patients who had no symptoms at admission.
+
+The only individual symptom which showed a significant increase was headache. 
+
+Most symptoms show a decrease in the proportion of patients with them at admission, however not all differences are statistically significant. This could be due to the small numbers in some groups.
+
+
+## Clusters of symptoms
 The clusters used below are based on work by University of Edinburgh which most often occurred together.
 
 **Neurocutaneous Symptoms**: Ear pain, Confusion, Seizures, Skin rash, Skin ulcers, Conjunctivitis, Bleeding (Haemorrhage), Headache.

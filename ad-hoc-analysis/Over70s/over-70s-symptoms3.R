@@ -291,7 +291,7 @@ tbl_all_symptoms <- symptom_data %>%
   mutate(Significant = if_else(prop.test(
     x = c(`n_Before 30th April`, `n_On or after 30th April`),
     n = c(n_before, n_after)
-  )$p.value < 0.3,
+  )$p.value < 0.05,
   "Yes",
   "No"
   )) %>%
@@ -322,7 +322,7 @@ tbl_all_symptoms_ex_unknown <- symptom_data %>%
   mutate(Significant = if_else(prop.test(
     x = c(`n_Before 30th April`, `n_On or after 30th April`),
     n = c(n_before, n_after)
-  )$p.value < 0.3,
+  )$p.value < 0.05,
   "Yes",
   "No"
   )) %>%

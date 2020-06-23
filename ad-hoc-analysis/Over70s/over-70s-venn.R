@@ -35,7 +35,7 @@ before_lists <- venn_data %>%
   select(-Status)
 
 after_lists <- venn_data %>%
-  filter(admission == "On or after 30th April 2020") %>%
+  filter(admission == "On or after 30th April") %>%
   select(-admission, -"No symptoms presenting (inc Unknown)", -"No symptoms presenting (all No)") %>%
   pivot_longer(cols = c(Fever:Key), names_to = "Group", values_to = "Status") %>%
   filter(Status == "YES") %>%
@@ -55,11 +55,14 @@ venn_gastro_before <- ggVennDiagram(list(
   theme(plot.title = element_text(hjust = 0.5)) +
   labs(fill = "Patients") +
   ggtitle(str_glue("Over 70s, before 30 April 2020 (N = {combined_size})",
-                   combined_size = c(unlist(before_lists$Respiratory), 
-                                     unlist(before_lists$Key), 
-                                     unlist(before_lists$Gastrointestinal)) %>% 
-                     unique() %>% 
-                     length()))
+    combined_size = c(
+      unlist(before_lists$Respiratory),
+      unlist(before_lists$Key),
+      unlist(before_lists$Gastrointestinal)
+    ) %>%
+      unique() %>%
+      length()
+  ))
 
 venn_gastro_after <- ggVennDiagram(list(
   "Respiratory \nCluster" = unlist(after_lists$Respiratory),
@@ -70,11 +73,14 @@ venn_gastro_after <- ggVennDiagram(list(
   theme(plot.title = element_text(hjust = 0.5)) +
   labs(fill = "Patients") +
   ggtitle(str_glue("Over 70s, after 30 April 2020 (N = {combined_size})",
-                   combined_size = c(unlist(after_lists$Respiratory), 
-                                     unlist(after_lists$Key), 
-                                     unlist(after_lists$Gastrointestinal)) %>% 
-                     unique() %>% 
-                     length()))
+    combined_size = c(
+      unlist(after_lists$Respiratory),
+      unlist(after_lists$Key),
+      unlist(after_lists$Gastrointestinal)
+    ) %>%
+      unique() %>%
+      length()
+  ))
 
 # Neurocutaneous
 venn_neuro_before <- ggVennDiagram(list(
@@ -86,11 +92,14 @@ venn_neuro_before <- ggVennDiagram(list(
   theme(plot.title = element_text(hjust = 0.5)) +
   labs(fill = "Patients") +
   ggtitle(str_glue("Over 70s, before 30 April 2020 (N = {combined_size})",
-                   combined_size = c(unlist(before_lists$Respiratory), 
-                                     unlist(before_lists$Key), 
-                                     unlist(before_lists$Neurocutaneous)) %>% 
-                     unique() %>% 
-                     length()))
+    combined_size = c(
+      unlist(before_lists$Respiratory),
+      unlist(before_lists$Key),
+      unlist(before_lists$Neurocutaneous)
+    ) %>%
+      unique() %>%
+      length()
+  ))
 
 venn_neuro_after <- ggVennDiagram(list(
   "Respiratory \nCluster" = unlist(after_lists$Respiratory),
@@ -101,11 +110,14 @@ venn_neuro_after <- ggVennDiagram(list(
   theme(plot.title = element_text(hjust = 0.5)) +
   labs(fill = "Patients") +
   ggtitle(str_glue("Over 70s, after 30 April 2020 (N = {combined_size})",
-                   combined_size = c(unlist(after_lists$Respiratory), 
-                                     unlist(after_lists$Key), 
-                                     unlist(after_lists$Neurocutaneous)) %>% 
-                     unique() %>% 
-                     length()))
+    combined_size = c(
+      unlist(after_lists$Respiratory),
+      unlist(after_lists$Key),
+      unlist(after_lists$Neurocutaneous)
+    ) %>%
+      unique() %>%
+      length()
+  ))
 
 # Generalised
 venn_general_before <- ggVennDiagram(list(
@@ -117,11 +129,14 @@ venn_general_before <- ggVennDiagram(list(
   theme(plot.title = element_text(hjust = 0.5)) +
   labs(fill = "Patients") +
   ggtitle(str_glue("Over 70s, before 30 April 2020 (N = {combined_size})",
-                   combined_size = c(unlist(before_lists$Respiratory), 
-                                     unlist(before_lists$Key), 
-                                     unlist(before_lists$Generalised)) %>% 
-                     unique() %>% 
-                     length()))
+    combined_size = c(
+      unlist(before_lists$Respiratory),
+      unlist(before_lists$Key),
+      unlist(before_lists$Generalised)
+    ) %>%
+      unique() %>%
+      length()
+  ))
 
 venn_general_after <- ggVennDiagram(list(
   "Respiratory \nCluster" = unlist(after_lists$Respiratory),
@@ -132,9 +147,11 @@ venn_general_after <- ggVennDiagram(list(
   theme(plot.title = element_text(hjust = 0.5)) +
   labs(fill = "Patients") +
   ggtitle(str_glue("Over 70s, after 30 April 2020 (N = {combined_size})",
-                   combined_size = c(unlist(after_lists$Respiratory), 
-                                     unlist(after_lists$Key), 
-                                     unlist(after_lists$Generalised)) %>% 
-                     unique() %>% 
-                     length()))
-
+    combined_size = c(
+      unlist(after_lists$Respiratory),
+      unlist(after_lists$Key),
+      unlist(after_lists$Generalised)
+    ) %>%
+      unique() %>%
+      length()
+  ))

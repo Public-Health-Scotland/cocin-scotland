@@ -1,5 +1,5 @@
 sex_from_chi <- function(chi) {
-  chi_sex <- if_else((str_sub(chi, 9, 9) %>%
+  chi_sex <- dplyr::if_else((stringr::str_sub(chi, 9, 9) %>%
     as.integer() %>%
     mod(2)) == 0, "Female", "Male") %>%
     factor(levels = c("Male", "Female", "Not specified"))
@@ -8,12 +8,12 @@ sex_from_chi <- function(chi) {
 }
 
 dob_from_chi <- function(chi) {
-  date1 <- dmy(str_replace(chi, "^(\\d{4})(\\d{2})\\d{4}$", "\\119\\2"))
-  date2 <- dmy(str_replace(chi, "^(\\d{4})(\\d{2})\\d{4}$", "\\120\\2"))
+  date1 <- lubridate::dmy(stringr::str_replace(chi, "^(\\d{4})(\\d{2})\\d{4}$", "\\119\\2"))
+  date2 <- lubridate::dmy(stringr::str_replace(chi, "^(\\d{4})(\\d{2})\\d{4}$", "\\120\\2"))
 
-  chi_dob <- case_when(
-    date2 >= today() ~ date1,
-    time_length(date1 %--% today(), unit = "years") > 110 ~ date2,
+  chi_dob <- dplyr::case_when(
+    date2 >= lubridate::today() ~ date1,
+    lubridate::time_length(date1 %--% lubridate::today(), unit = "years") > 110 ~ date2,
     TRUE ~ NA_Date_
   )
 
@@ -22,46 +22,46 @@ dob_from_chi <- function(chi) {
 
 fix_age_sex_from_chi <- function(data) {
   valid_chis <- data %>%
-    select(subjid, nhs_chi, agedat, age, sex, hostdat, daily_dsstdat, cestdat, dsstdat) %>%
-    group_by(subjid) %>%
-    summarise_all(~ first(na.omit(.))) %>%
-    filter(phsmethods::chi_pad(nhs_chi) %>% phsmethods::chi_check() == "Valid CHI")
+    dplyr::select(subjid, nhs_chi, agedat, age, sex, hostdat, daily_dsstdat, cestdat, dsstdat) %>%
+    dplyr::group_by(subjid) %>%
+    dplyr::summarise_all(~ dplyr::first(na.omit(.))) %>%
+    dplyr::filter(phsmethods::chi_pad(nhs_chi) %>% phsmethods::chi_check() == "Valid CHI")
 
-  missing_age <- valid_chis %>% filter(is.na(age))
-  missing_sex <- valid_chis %>% filter(is.na(sex))
+  missing_age <- valid_chis %>% dplyr::filter(is.na(age))
+  missing_sex <- valid_chis %>% dplyr::filter(is.na(sex))
 
   fixed_age <- missing_age %>%
-    filter(is.na(agedat)) %>%
-    mutate(
+    dplyr::filter(is.na(agedat)) %>%
+    dplyr::mutate(
       agedat = dob_from_chi(nhs_chi),
 
       # Date at which to calculate age
-      anydat = coalesce(hostdat, daily_dsstdat, cestdat, dsstdat),
+      anydat = dplyr::coalesce(hostdat, daily_dsstdat, cestdat, dsstdat),
 
       # Calculate age using DOB and anydat derived above
-      age = interval(agedat, anydat) %>%
-        as.period() %>%
-        year() %>%
+      age = lubridate::interval(agedat, anydat) %>%
+        lubridate::as.period() %>%
+        lubridate::year() %>%
         as.double()
     ) %>%
-    select(subjid, agedat, age)
+    dplyr::select(subjid, agedat, age)
 
   fixed_sex <- missing_sex %>%
-    mutate(sex = sex_from_chi(nhs_chi)) %>%
-    select(subjid, sex)
+    dplyr::mutate(sex = sex_from_chi(nhs_chi)) %>%
+    dplyr::select(subjid, sex)
 
-  fixed_data <- reduce(list(data, fixed_sex, fixed_age),
+  fixed_data <- purrr::reduce(list(data, fixed_sex, fixed_age),
     left_join,
     by = "subjid",
     suffix = c("", "_fix")
   ) %>%
     mutate(
-      age = if_else(is.na(age_fix), age, age_fix),
-      agedat = if_else(is.na(agedat_fix), agedat, agedat_fix),
-      sex = if_else(is.na(sex_fix), sex, sex_fix)
+      age = dplyr::if_else(is.na(age_fix), age, age_fix),
+      agedat = dplyr::if_else(is.na(agedat_fix), agedat, agedat_fix),
+      sex = dplyr::if_else(is.na(sex_fix), sex, sex_fix)
     )
 
-  message(str_glue("Fixed {n_dob} records with missing DoBs and {n_sex} records with missing sex.",
+  message(stringr::str_glue("Fixed {n_dob} records with missing DoBs and {n_sex} records with missing sex.",
     n_dob = sum(!is.na(fixed_age$agedat)),
     n_sex = sum(!is.na(fixed_sex$sex))
   ))

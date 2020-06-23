@@ -24,6 +24,8 @@ library(stringr)
 library(here)
 library(fs)
 library(REDCapR)
+library(writexl)
+library(scales)
 
 
 ### 2 - Load functions ---

@@ -82,9 +82,9 @@ scot_locations <-
   left_join(
     read_csv(
       paste0(
-        "https://www.opendata.nhs.scot/dataset/9f942fdb-e59e-44f5-",
-        "b534-d6e17229cc7b/resource/f177be64-e94c-4ddf-a2ee-ea58d648d55a/",
-        "download/hb2019_codes_and_labels_21042020.csv"
+        "https://www.opendata.nhs.scot/dataset/9f942fdb-e59e-44f5-b534-d6e17229cc7b/",
+        "resource/652ff726-e676-4a20-abda-435b98dd7bdc/",
+        "download/hb14_hb19.csv"
       ),
       col_types = cols_only(
         HB = col_character(),
@@ -93,7 +93,6 @@ scot_locations <-
     ),
     by = "HB"
   ) %>%
-  
   clean_names()
 
 # Match lookup to CoCIN extract

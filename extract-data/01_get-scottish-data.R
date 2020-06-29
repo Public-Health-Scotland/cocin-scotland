@@ -21,7 +21,7 @@ source("extract-data/00_setup-environment.R")
 ### 1 - Extract patient id data from RedCap via API ----
 
 # Enter API Token
-if (Sys.getenv("ccp_token") == "") {
+if (is.na(Sys.getenv("ccp_token", unset = NA))) {
   Sys.setenv(
     ccp_token =
       rstudioapi::showPrompt(

@@ -34,19 +34,19 @@ if (is.na(Sys.getenv("ccp_token", unset = NA))) {
 }
 
 
-# Call API allowing for up to 5 tries 
+# Call API allowing for up to 5 tries
 tries <- 0
 extract <- NA
 
-## Note - need to come off the VPN connection for the below 
+## Note - need to come off the VPN connection for the below
 while (tries == 0 | (tries < 5 & inherits(extract, "try-error"))) {
-  
+
   # Avoid using the API on the hour as this is when a lot of reports refresh
   while (minute(Sys.time()) %in% c(59, 0:5)) {
     message("Waiting till after the hour to avoid overloading the API")
     Sys.sleep(30)
   }
-  
+
   print(tries)
   extract <- try(extract <- redcap_read(
     redcap_uri = "https://ncov.medsci.ox.ac.uk/api/",
@@ -63,7 +63,7 @@ while (tries == 0 | (tries < 5 & inherits(extract, "try-error"))) {
 
 # Create scottish location lookup
 scot_locations <-
-  
+
   # Extract Scottish hospital location codes
   read_csv(
     paste0(
@@ -77,9 +77,9 @@ scot_locations <-
       HB = col_character()
     )
   ) %>%
-  
+
   # Extract health board names and join
-  left_join(
+  dplyr::left_join(
     read_csv(
       paste0(
         "https://www.opendata.nhs.scot/dataset/9f942fdb-e59e-44f5-b534-d6e17229cc7b/",
@@ -97,37 +97,37 @@ scot_locations <-
 
 # Match lookup to CoCIN extract
 extract %<>%
-  mutate(hospid = str_sub(subjid, end = 5)) %>%
-  left_join(scot_locations, by = c("hospid" = "location"))
+  dplyr::mutate(hospid = str_sub(subjid, end = 5)) %>%
+  dplyr::left_join(scot_locations, by = c("hospid" = "location"))
 
 # Extract list of Data Access Groups (DAG) associated with Scottish locations
 scot_dag <-
   extract %>%
-  filter(!is.na(location_name)) %>%
-  distinct(redcap_data_access_group)
+  dplyr::filter(!is.na(location_name)) %>%
+  dplyr::distinct(redcap_data_access_group)
 
-# Select CoCIN records 
+# Select CoCIN records
 extract %<>%
-  filter(redcap_data_access_group %in% scot_dag |
+  dplyr::filter(redcap_data_access_group %in% scot_dag |
     !is.na(location_name))
 
 ## Download COCIN data for all Scottish patients
 
 scotpat <- unique(extract$subjid)
 
-# Call API allowing for up to 5 tries 
+# Call API allowing for up to 5 tries
 tries <- 0
 extract <- NA
 
-## Note - need to come off the VPN connection for the below 
+## Note - need to come off the VPN connection for the below
 while (tries == 0 | (tries < 5 & inherits(extract, "try-error"))) {
-  
+
   # Avoid using the API on the hour as this is when a lot of reports refresh
   while (minute(Sys.time()) %in% c(59, 0:5)) {
     message("Waiting till after the hour to avoid overloading the API")
     Sys.sleep(30)
   }
-  
+
   print(tries)
   extract <- redcap_read(
     redcap_uri = "https://ncov.medsci.ox.ac.uk/api/",
@@ -149,8 +149,8 @@ extract %<>%
 
 # Match lookup to CoCIN extract
 extract %<>%
-  mutate(hospid = str_sub(subjid, end = 5)) %>%
-  left_join(scot_locations, by = c("hospid" = "location"))
+  dplyr::mutate(hospid = str_sub(subjid, end = 5)) %>%
+  dplyr::left_join(scot_locations, by = c("hospid" = "location"))
 
 
 ### 3 - Run factor/label code ----
@@ -176,7 +176,7 @@ write_rds(
 # Summary of records by location
 write_csv(
   extract %>%
-    count(hb_name, redcap_data_access_group, hospid, location_name),
+    dplyr::count(hb_name, redcap_data_access_group, hospid, location_name),
   here("data", paste0(
     format(extract_date, "%Y-%m-%d_%H-%M"),
     "_scot-record-summary.csv"

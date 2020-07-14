@@ -1,3 +1,7 @@
 vpn_active <- function() {
-  any(str_detect(string = system("ipconfig", intern = TRUE), "nss\\.scot\\.nhs\\.uk"))
+  if (str_detect(version$os, "linux")) {
+    return(TRUE)
+  } else {
+    return(any(str_detect(string = system("ipconfig", intern = TRUE), "nss\\.scot\\.nhs\\.uk")))
+  }
 }

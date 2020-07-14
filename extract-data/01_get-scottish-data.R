@@ -183,5 +183,12 @@ write_csv(
   ))
 )
 
+# Write current metadata for reference
+redcap_metadata_read(
+  redcap_uri = "https://ncov.medsci.ox.ac.uk/api/",
+  token = Sys.getenv("ccp_token")
+)$data %>%
+  write_csv(path("data", str_glue("{today()}_COCIN_metadata.csv")))
+
 
 ### END OF SCRIPT ###

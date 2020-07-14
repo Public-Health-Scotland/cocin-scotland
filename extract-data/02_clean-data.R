@@ -102,6 +102,8 @@ scot_data %<>%
       ff_label("Onset to admission (days)")
   )
 
+# Restore label to hostdat otherwise case_when fails for different types
+label(scot_data$hostdat) <- "Admission date to facility"
 
 # Age
 scot_data %<>%

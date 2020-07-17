@@ -153,8 +153,8 @@ test_in_stay <- rapid_stay_level %>%
 other_coronavirus <- rapid_stay_level %>%
   anti_join(coded_as_covid, by = "chi_number") %>%
   anti_join(test_in_stay, by = "chi_number") %>%
-  filter(covid == "Other coronavirus", age >= 18) %>%
-  mutate(reason = "Over 18 other coronavirus")
+  filter(covid == "Other coronavirus", age >= 18 | result == 1) %>%
+  mutate(reason = if_else(result == 1, "Other coronavirus - ECOSS +ve", "Other coronavirus (>18 only)"))
 
 # Find patients who had a positive test before an admision and take that patients latest admission
 test_before_stay <- rapid_stay_level %>%

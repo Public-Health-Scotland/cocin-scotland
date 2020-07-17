@@ -56,6 +56,11 @@ cocin <- read_rds(str_glue("data/{date}_scot-data-clean.rds", date = latest_extr
   # Repair any age/sex we can using CHI
   fix_age_sex_from_chi()
 
+## TO DO
+# Remove other coronavirus / limit dates
+# Keep only one episode per patient (possible match to COCIN)
+# 42 days between episodes for new case
+
 # Read in the RAPID file and select variables we need
 rapid <- read_rds(here("data", "rapid_ecoss_joined.rds")) %>%
   select(

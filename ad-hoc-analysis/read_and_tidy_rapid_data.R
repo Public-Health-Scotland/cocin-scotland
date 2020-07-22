@@ -52,10 +52,15 @@ if (date(local_last_modified) > ymd_hm(latest_extract_date())) {
   source("extract-data/99_remove-old-data.R")
 }
 
+rm(linked_file_path, local_last_modified, server_last_modified)
+
 # Read COCIN data
-cocin <- read_rds(str_glue("data/{date}_scot-data-clean.rds", date = latest_extract_date())) %>%
-  # Repair any age/sex we can using CHI
-  fix_age_sex_from_chi()
+cocin_with_chi <- read_rds(str_glue("data/{date}_scot-data-clean.rds", date = latest_extract_date())) %>%
+  select(subjid, chi_number = nhs_chi, cocin_adm = hostdat, cocin_dis = dsstdtc) %>%
+  mutate_at(vars(cocin_adm, cocin_dis), ~ as_date(.)) %>%
+  group_by(subjid) %>%
+  summarise_all(~ first(na.omit(.))) %>%
+  filter(!is.na(chi_number), !is.na(cocin_adm))
 
 ## TO DO
 # Remove other coronavirus / limit dates
@@ -94,13 +99,14 @@ rapid <- read_rds(here("data", "rapid_ecoss_joined.rds")) %>%
 # Note we don't group episodes which change hospitals as COCIN CRFs are single hospital
 rapid_stay_level <- rapid %>%
   # filter(result == 1) %>%
-  group_by(chi_number, temporal_link_id, location_link_id, hospital_of_treatment_code) %>%
+  group_by(chi_number, temporal_link_id, location_link_id) %>%
   summarise(
     result = first(result), # Result is the result of the PCR test from ECOSS
     rapid_id = first(rapid_id),
     adm_date = min(admission_date),
     dis_date = max(discharge_date),
     test_date = first(specimen_date),
+    hospital_of_treatment_code = first(hospital_of_treatment_code),
     age = first(na.omit(age_year)),
     sex = first(na.omit(sex)),
     diag_1 = first(na.omit(diagnosis_1_code_4_char)),
@@ -110,11 +116,62 @@ rapid_stay_level <- rapid %>%
     diag_5 = first(na.omit(diagnosis_5_code_4_char)),
     diag_6 = first(na.omit(diagnosis_6_code_4_char))
   ) %>%
-  ungroup()
+  ungroup() %>%
+  replace_na(list(result = 0L))
 
 
-# Use the diagnosis data (where availiable) to highlight certain stays
-rapid_stay_level <- rapid_stay_level %>%
+# Identify the records with multiple admissions so we can choose one
+cocin_matched <- rapid_stay_level %>%
+  group_by(chi_number) %>%
+  filter(n() > 1) %>%
+  left_join(cocin_with_chi, by = c("chi_number")) %>%
+  filter(!is.na(subjid)) %>%
+  mutate(
+    adm_match = if_else(abs(time_length(adm_date %--% cocin_adm, unit = "days")) <= 1, TRUE, FALSE),
+    dis_match = if_else(abs(time_length(dis_date %--% cocin_dis, unit = "days")) <= 1, TRUE, FALSE)
+  ) %>%
+  replace_na(list(adm_match = FALSE, dis_match = FALSE)) %>%
+  # Select the admission because the dates match COCIN
+  mutate(select_adm = if_else(adm_match & dis_match, TRUE, FALSE)) %>%
+  # Mark the CHI as done
+  mutate(chi_done = max(select_adm)) %>%
+  # Cases where COCIN has no discharge but the adm date matches
+  mutate(select_adm = if_else(!chi_done & adm_match & is.na(cocin_dis), TRUE, select_adm)) %>%
+  # Mark the CHI as done
+  mutate(chi_done = max(select_adm)) %>%
+  # Filter out the records which we haven't selected
+  filter(select_adm | !chi_done | is.na(chi_done)) %>%
+  # Deal with the admissions which need grouping to match COCIN
+  mutate(join_records = if_else(interval(adm_date, dis_date) %within% interval(cocin_adm - days(1), cocin_dis + days(1)),
+    0L, NA_integer_
+  )) %>%
+  # Limit to records we're about to merge and the single admissions which have been selected already
+  filter(join_records == 0 | select_adm) %>%
+  group_by(chi_number, join_records) %>%
+  summarise(
+    result = first(result),
+    rapid_id = first(rapid_id),
+    adm_date = min(adm_date),
+    dis_date = max(dis_date),
+    test_date = first(test_date),
+    hospital_of_treatment_code = first(hospital_of_treatment_code),
+    age = first(na.omit(age)),
+    sex = first(na.omit(sex)),
+    diag_1 = first(na.omit(diag_1)),
+    diag_2 = first(na.omit(diag_2)),
+    diag_3 = first(na.omit(diag_3)),
+    diag_4 = first(na.omit(diag_4)),
+    diag_5 = first(na.omit(diag_5)),
+    diag_6 = first(na.omit(diag_6))
+  ) %>%
+  ungroup() %>%
+  select(-join_records) %>%
+  mutate(cocin_matched = TRUE)
+
+rapid_cocin_filtered <- rapid_stay_level %>%
+  anti_join(cocin_matched, by = "chi_number") %>%
+  bind_rows(cocin_matched) %>%
+  # Use the diagnosis data (where availiable) to highlight certain stays
   mutate(
     covid_lab = grepl("U071", paste(diag_1, diag_2, diag_3, diag_4, diag_5, diag_6), fixed = TRUE),
     covid_clinical = grepl("U072", paste(diag_1, diag_2, diag_3, diag_4, diag_5, diag_6), fixed = TRUE),
@@ -126,16 +183,42 @@ rapid_stay_level <- rapid_stay_level %>%
       covid_other ~ "Other coronavirus",
       no_diag_data ~ "No diag data"
     )
-  ) %>%
-  replace_na(list(result = 0L))
+  )
+
+rm(cocin_with_chi, rapid, rapid_stay_level, cocin_matched)
 
 # Want to get one stay per patient
 # Filter off as we find a sensible match
 
+# Use the COCIN matched admissions as a start
+cocin_match <- rapid_cocin_filtered %>%
+  filter(cocin_matched) %>%
+  mutate(reason = "COCIN matched")
+# mutate(reason = case_when(
+#   covid == "Lab comfirmed" ~ if_else(result == 1,
+#                                      "COCIN - Lab comfirmed - ECOSS + Diag",
+#                                      "COCIN - Lab comfirmed - diag only"
+#   ),
+#   covid == "Clinical suspected" ~ if_else(result == 1,
+#                                           "COCIN - Clinical suspected - ECOSS confirmed",
+#                                           "COCIN - Clinical suspected - no ECOSS"
+#   ),
+#   TRUE ~ if_else(result == 1, "COCIN - ECOSS +ve", "COCIN - ECOSS -ve")
+# ))
+
 # Find paitents who had a positive test during the stay and use that
-# Take the latest stay if needed
-coded_as_covid <- rapid_stay_level %>%
+coded_as_covid <- rapid_cocin_filtered %>%
+  # Remove any CHIs which already have a matched admission
+  anti_join(cocin_match, by = "chi_number") %>%
   filter(covid %in% c("Lab comfirmed", "Clinical suspected")) %>%
+  # If we have multiple admission close in time all with good diag data then merge them
+  group_by(chi_number, temporal_link_id) %>%
+  # Use last as then we are more likely to avoid an initial transfer hospital
+  summarise_all(~ last(na.omit(.))) %>%
+  ungroup() %>%
+  # Arrange to keep the earliest admission if we still have multiple
+  arrange(desc(adm_date)) %>%
+  distinct(chi_number, .keep_all = TRUE) %>%
   mutate(reason = case_when(
     covid == "Lab comfirmed" ~ if_else(result == 1,
       "Lab comfirmed - ECOSS + Diag",
@@ -147,94 +230,119 @@ coded_as_covid <- rapid_stay_level %>%
     )
   ))
 
-test_in_stay <- rapid_stay_level %>%
+
+test_in_stay <- rapid_cocin_filtered %>%
+  # Remove any CHIs which already have a matched admission
+  anti_join(cocin_match, by = "chi_number") %>%
   anti_join(coded_as_covid, by = "chi_number") %>%
+  # Only keep records with a +ve ECOSS test
   filter(result == 1) %>%
+  # Keep admissions where the test was within the dates
   filter((adm_date <= test_date & dis_date >= test_date) |
     (is.na(dis_date) & (test_date >= adm_date))) %>%
+  # If we have multiple admissions which overlap the test date merge them
+  group_by(chi_number, temporal_link_id) %>%
+  # Use last as then we are more likely to avoid an initial transfer hospital
+  summarise_all(~ last(na.omit(.))) %>%
+  ungroup() %>%
+  # Arrange to keep the earliest admission if we still have multiple
   arrange(desc(adm_date)) %>%
   distinct(chi_number, .keep_all = TRUE) %>%
   mutate(reason = "Test during stay")
 
-other_coronavirus <- rapid_stay_level %>%
-  anti_join(coded_as_covid, by = "chi_number") %>%
-  anti_join(test_in_stay, by = "chi_number") %>%
-  filter(covid == "Other coronavirus", age >= 18 | result == 1) %>%
-  mutate(reason = if_else(result == 1, "Other coronavirus - ECOSS +ve", "Other coronavirus (>18 only)"))
+# other_coronavirus <- rapid_stay_level %>%
+# Remove any CHIs which already have a matched admission
+#   anti_join(coded_as_covid, by = "chi_number") %>%
+#   anti_join(test_in_stay, by = "chi_number") %>%
+#   filter(covid == "Other coronavirus", age >= 18 | result == 1) %>%
+#   mutate(reason = if_else(result == 1, "Other coronavirus - ECOSS +ve", "Other coronavirus (>18 only)"))
 
 # Find patients who had a positive test before an admision and take that patients latest admission
-test_before_stay <- rapid_stay_level %>%
+test_before_stay <- rapid_cocin_filtered %>%
+  # Remove any CHIs which already have a matched admission
+  anti_join(cocin_match, by = "chi_number") %>%
   anti_join(coded_as_covid, by = "chi_number") %>%
   anti_join(test_in_stay, by = "chi_number") %>%
-  anti_join(other_coronavirus, by = "chi_number") %>%
+  # anti_join(other_coronavirus, by = "chi_number") %>%
   filter(result == 1) %>%
   filter(test_date %within% ((adm_date - days(21)) %--% adm_date)) %>%
-  arrange(adm_date) %>%
+  # If we have multiple admissions which overlap the test date merge them
+  group_by(chi_number, temporal_link_id) %>%
+  # Use last as then we are more likely to avoid an initial transfer hospital
+  summarise_all(~ last(na.omit(.))) %>%
+  ungroup() %>%
+  arrange(chi_number, adm_date) %>%
   distinct(chi_number, .keep_all = TRUE) %>%
   mutate(reason = "Test <= 21 days before stay")
 
-# Exclude any who have tested positive after the latest discharge we have for them
-test_after_dis <- rapid_stay_level %>%
+# See what we have - we're assuming these are non-covid admissions
+rapid_cocin_filtered %>%
+  # Remove any CHIs which already have a matched admission
+  anti_join(cocin_match, by = "chi_number") %>%
   anti_join(coded_as_covid, by = "chi_number") %>%
   anti_join(test_in_stay, by = "chi_number") %>%
-  anti_join(other_coronavirus, by = "chi_number") %>%
+  # anti_join(other_coronavirus, by = "chi_number") %>%
   anti_join(test_before_stay, by = "chi_number") %>%
-  group_by(chi_number) %>%
-  filter(test_date > max(dis_date)) %>%
-  ungroup()
-
-# See what we have - should be no records left
-rapid_stay_level %>%
-  anti_join(coded_as_covid, by = "chi_number") %>%
-  anti_join(test_in_stay, by = "chi_number") %>%
-  anti_join(other_coronavirus, by = "chi_number") %>%
-  anti_join(test_before_stay, by = "chi_number") %>%
-  anti_join(test_after_dis, by = "chi_number") %>%
   count(result)
 
 # Create a dataset of single admission per CHI
 covid_admissions <- bind_rows(
+  cocin_match,
   test_in_stay,
   test_before_stay,
   coded_as_covid,
-  other_coronavirus
+  # other_coronavirus
 )
 
+# Check we have one admission per CHI
+map(list(covid_admissions,cocin_match, coded_as_covid, test_before_stay, test_in_stay), ~ .x %>% count(chi_number) %>% count(n))
+
+# Look at the reasons for each admission
 covid_admissions %>% count(reason)
 
+reason_levels <- covid_admissions %>% count(reason) %>% arrange(n) %>% pull(reason)
+
+
+# Plot the admission reason by admission date
 ggplot2::ggplot(covid_admissions) +
-  geom_freqpoly(aes(adm_date, colour = reason), binwidth = 7)
+  geom_histogram(aes(adm_date, fill = factor(reason, reason_levels)), binwidth = 7) +
+  theme_minimal() +
+  scale_fill_brewer("Reason", type = "qual", palette = "Set3")
 
-covid_admissions <- covid_admissions %>%
-  mutate(
-    age.factor = case_when(
-      age < 17 ~ "<17",
-      age < 30 ~ "17-29",
-      age < 40 ~ "30-39",
-      age < 50 ~ "40-49",
-      age < 60 ~ "50-59",
-      age < 70 ~ "60-69",
-      age < 80 ~ "70-79",
-      is.na(age) ~ NA_character_,
-      TRUE ~ "80+"
-    ),
-    age_band = case_when(
-      age < 18 ~ "Pediatric",
-      age >= 18 ~ "Adult"
-    ) %>%
-      as_factor() %>%
-      fct_explicit_na(na_level = "Unknown"),
-    sex = case_when(
-      sex == "M" ~ "Male",
-      sex == "F" ~ "Female"
-    ) %>%
-      factor(levels = c("Male", "Female", "Not specified")),
-    admission_iso = isoweek(adm_date),
-    admission_week = floor_date(adm_date, unit = "week", week_start = 1),
-    health_board_of_treatment = str_sub(health_board_of_treatment, 5) %>%
-      str_to_title() %>%
-      str_replace("&", "and") %>%
-      str_c("NHS ", .)
-  )
 
-rm(rapid_stay_level, test_after_dis, test_in_stay, test_before_stay, linked_file_path)
+# Not sure if this is needed
+# Might need reinstating with changes?
+
+# covid_admissions <- covid_admissions %>%
+#   mutate(
+#     age.factor = case_when(
+#       age < 17 ~ "<17",
+#       age < 30 ~ "17-29",
+#       age < 40 ~ "30-39",
+#       age < 50 ~ "40-49",
+#       age < 60 ~ "50-59",
+#       age < 70 ~ "60-69",
+#       age < 80 ~ "70-79",
+#       is.na(age) ~ NA_character_,
+#       TRUE ~ "80+"
+#     ),
+#     age_band = case_when(
+#       age < 18 ~ "Pediatric",
+#       age >= 18 ~ "Adult"
+#     ) %>%
+#       as_factor() %>%
+#       fct_explicit_na(na_level = "Unknown"),
+#     sex = case_when(
+#       sex == "M" ~ "Male",
+#       sex == "F" ~ "Female"
+#     ) %>%
+#       factor(levels = c("Male", "Female", "Not specified")),
+#     admission_iso = isoweek(adm_date),
+#     admission_week = floor_date(adm_date, unit = "week", week_start = 1),
+#     health_board_of_treatment = str_sub(health_board_of_treatment, 5) %>%
+#       str_to_title() %>%
+#       str_replace("&", "and") %>%
+#       str_c("NHS ", .)
+#   )
+
+rm(cocin_with_chi, coded_as_covid, other_coronavirus, rapid, rapid_stay_level, test_before_stay, test_in_stay)

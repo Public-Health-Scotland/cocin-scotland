@@ -345,4 +345,4 @@ ggplot2::ggplot(covid_admissions) +
 #       str_c("NHS ", .)
 #   )
 
-rm(cocin_with_chi, coded_as_covid, other_coronavirus, rapid, rapid_stay_level, test_before_stay, test_in_stay)
+rm(coded_as_covid, rapid_cocin_filtered, test_before_stay, test_in_stay)

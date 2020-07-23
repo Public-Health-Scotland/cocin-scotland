@@ -83,6 +83,11 @@ scot_data %<>%
 
 ### 4 - General data cleaning ----
 
+# Fix age and sex where we have CHI number
+scot_data %<>%
+  fix_age_sex_from_chi()
+
+
 # Dates
 scot_data %<>%
 

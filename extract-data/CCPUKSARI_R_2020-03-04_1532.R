@@ -553,8 +553,6 @@ levels(data$outcome_complete) <- c("Incomplete", "Unverified", "Complete")
 levels(data$core_additional_information_complete) <- c("Incomplete", "Unverified", "Complete")
 
 # Setting Labels
-
-library(finalfit)
 data <- data %>%
   mutate(
     sex = ff_label(sex, "Sex at Birth"),

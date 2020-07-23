@@ -199,6 +199,15 @@ coded_as_covid <- rapid_cocin_filtered %>%
   # Use last as then we are more likely to avoid an initial transfer hospital
   summarise_all(~ last(na.omit(.))) %>%
   ungroup() %>%
+  group_by(chi_number) %>% 
+  filter(n() > 1) %>% 
+  ungroup() %>% 
+  mutate(readmission = if_else(chi_number == lag(chi_number), 
+                               if_else((lag(dis_date) - adm_date) > 14, 
+                                       1L, 
+                                       0L), 
+                               0L)
+         ) %>% View()
   # Arrange to keep the earliest admission if we still have multiple
   arrange(desc(adm_date)) %>%
   distinct(chi_number, .keep_all = TRUE) %>%

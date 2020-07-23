@@ -62,10 +62,6 @@ cocin_with_chi <- read_rds(str_glue("data/{date}_scot-data-clean.rds", date = la
   summarise_all(~ first(na.omit(.))) %>%
   filter(!is.na(chi_number), !is.na(cocin_adm))
 
-## TO DO
-# Remove other coronavirus / limit dates
-# Keep only one episode per patient (possible match to COCIN)
-# 42 days between episodes for new case
 
 # Read in the RAPID file and select variables we need
 rapid <- read_rds(here("data", "rapid_ecoss_joined.rds")) %>%
@@ -98,7 +94,6 @@ rapid <- read_rds(here("data", "rapid_ecoss_joined.rds")) %>%
 # Aggregate to 'stay' level - this just uses a marker Bob created which tags episodes which are close in time
 # Note we don't group episodes which change hospitals as COCIN CRFs are single hospital
 rapid_stay_level <- rapid %>%
-  # filter(result == 1) %>%
   group_by(chi_number, temporal_link_id, location_link_id) %>%
   summarise(
     result = first(result), # Result is the result of the PCR test from ECOSS
@@ -166,7 +161,7 @@ cocin_matched <- rapid_stay_level %>%
   ) %>%
   ungroup() %>%
   select(-join_records) %>%
-  mutate(cocin_matched = TRUE)
+  mutate(cocin_admission = TRUE)
 
 rapid_cocin_filtered <- rapid_stay_level %>%
   anti_join(cocin_matched, by = "chi_number") %>%
@@ -192,25 +187,14 @@ rm(cocin_with_chi, rapid, rapid_stay_level, cocin_matched)
 
 # Use the COCIN matched admissions as a start
 cocin_match <- rapid_cocin_filtered %>%
-  filter(cocin_matched) %>%
+  filter(cocin_admission) %>%
   mutate(reason = "COCIN matched")
-# mutate(reason = case_when(
-#   covid == "Lab comfirmed" ~ if_else(result == 1,
-#                                      "COCIN - Lab comfirmed - ECOSS + Diag",
-#                                      "COCIN - Lab comfirmed - diag only"
-#   ),
-#   covid == "Clinical suspected" ~ if_else(result == 1,
-#                                           "COCIN - Clinical suspected - ECOSS confirmed",
-#                                           "COCIN - Clinical suspected - no ECOSS"
-#   ),
-#   TRUE ~ if_else(result == 1, "COCIN - ECOSS +ve", "COCIN - ECOSS -ve")
-# ))
 
 # Find paitents who had a positive test during the stay and use that
 coded_as_covid <- rapid_cocin_filtered %>%
   # Remove any CHIs which already have a matched admission
   anti_join(cocin_match, by = "chi_number") %>%
-  filter(covid %in% c("Lab comfirmed", "Clinical suspected")) %>%
+  filter(covid %in% c("Lab comfirmed", "Clinically suspected")) %>%
   # If we have multiple admission close in time all with good diag data then merge them
   group_by(chi_number, temporal_link_id) %>%
   # Use last as then we are more likely to avoid an initial transfer hospital
@@ -220,13 +204,13 @@ coded_as_covid <- rapid_cocin_filtered %>%
   arrange(desc(adm_date)) %>%
   distinct(chi_number, .keep_all = TRUE) %>%
   mutate(reason = case_when(
-    covid == "Lab comfirmed" ~ if_else(result == 1,
-      "Lab comfirmed - ECOSS + Diag",
-      "Lab comfirmed - diag only"
+    covid == "Lab comfirmed" ~ case_when(result == 1 ~ "Lab comfirmed - ECOSS +ve & Diag",
+                                         result == 0 ~ "Lab comfirmed - ECOSS -ve & Diag",
+                                         is.na(result) ~ "Lab comfirmed - Diag, no ECOSS test"
     ),
-    covid == "Clinical suspected" ~ if_else(result == 1,
-      "Clinical suspected - ECOSS confirmed",
-      "Clinical suspected - no ECOSS"
+    covid == "Clinically suspected" ~ case_when(result == 1 ~ "Clinically suspected - ECOSS +ve & Diag",
+                                              result == 0 ~ "Clinically suspected - ECOSS -ve & Diag",
+                                              is.na(result) ~ "Clinically suspected - Diag, no ECOSS test"
     )
   ))
 
@@ -249,13 +233,6 @@ test_in_stay <- rapid_cocin_filtered %>%
   arrange(desc(adm_date)) %>%
   distinct(chi_number, .keep_all = TRUE) %>%
   mutate(reason = "Test during stay")
-
-# other_coronavirus <- rapid_stay_level %>%
-# Remove any CHIs which already have a matched admission
-#   anti_join(coded_as_covid, by = "chi_number") %>%
-#   anti_join(test_in_stay, by = "chi_number") %>%
-#   filter(covid == "Other coronavirus", age >= 18 | result == 1) %>%
-#   mutate(reason = if_else(result == 1, "Other coronavirus - ECOSS +ve", "Other coronavirus (>18 only)"))
 
 # Find patients who had a positive test before an admision and take that patients latest admission
 test_before_stay <- rapid_cocin_filtered %>%

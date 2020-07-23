@@ -111,8 +111,7 @@ rapid_stay_level <- rapid %>%
     diag_5 = first(na.omit(diagnosis_5_code_4_char)),
     diag_6 = first(na.omit(diagnosis_6_code_4_char))
   ) %>%
-  ungroup() %>%
-  replace_na(list(result = 0L))
+  ungroup()
 
 
 # Identify the records with multiple admissions so we can choose one
@@ -174,7 +173,7 @@ rapid_cocin_filtered <- rapid_stay_level %>%
     no_diag_data = is.na(paste(diag_1, diag_2, diag_3, diag_4, diag_5, diag_6)),
     covid = case_when(
       covid_lab ~ "Lab comfirmed",
-      covid_clinical ~ "Clinical suspected",
+      covid_clinical ~ "Clinically suspected",
       covid_other ~ "Other coronavirus",
       no_diag_data ~ "No diag data"
     )

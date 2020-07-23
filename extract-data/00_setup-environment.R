@@ -29,16 +29,16 @@ library(scales)
 
 ### 2 - Load functions ---
 
-purrr::walk(dir(here::here("functions"), full.names = TRUE), source)
+purrr::walk(dir(here("functions"), full.names = TRUE), source)
 
 
 ### 3 - Create folders ---
 
-if(!is_dir(here("data"))){
+if (!is_dir(here("data"))) {
   dir_create(here("data"))
 }
 
-if(!is_dir(here("output"))){
+if (!is_dir(here("output"))) {
   dir_create(here("output"))
 }
 

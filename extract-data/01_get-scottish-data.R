@@ -166,9 +166,9 @@ rm(data)
 # Data extract
 write_rds(
   extract,
-  here("data", paste0(
-    format(extract_date, "%Y-%m-%d_%H-%M"),
-    "_scot-data.rds"
+  here("data", str_glue(
+    "{date}_scot-data.rds",
+    date = format(extract_date, "%Y-%m-%d_%H-%M")
   )),
   compress = "gz"
 )
@@ -177,9 +177,9 @@ write_rds(
 write_csv(
   extract %>%
     dplyr::count(hb_name, redcap_data_access_group, hospid, location_name),
-  here("data", paste0(
-    format(extract_date, "%Y-%m-%d_%H-%M"),
-    "_scot-record-summary.csv"
+  here("data", str_glue(
+    "{date}_scot-record-summary.csv",
+    date = format(extract_date, "%Y-%m-%d_%H-%M")
   ))
 )
 
@@ -188,7 +188,7 @@ redcap_metadata_read(
   redcap_uri = "https://ncov.medsci.ox.ac.uk/api/",
   token = Sys.getenv("ccp_token")
 )$data %>%
-  write_csv(path("data", str_glue("{today()}_COCIN_metadata.csv")))
+  write_csv(here("data", str_glue("{today()}_COCIN_metadata.csv")))
 
 
 ### END OF SCRIPT ###

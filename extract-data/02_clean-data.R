@@ -23,10 +23,7 @@ scot_data <-
   read_rds(
     here(
       "data",
-      paste0(
-        latest_extract_date(),
-        "_scot-data.rds"
-      )
+      str_glue("{latest_extract_date()}_scot-data.rds")
     )
   )
 
@@ -360,9 +357,8 @@ write_rds(
   scot_data,
   here(
     "data",
-    paste0(
-      latest_extract_date(),
-      "_scot-data-clean.rds"
+    str_glue(
+      "{latest_extract_date()}_scot-data-clean.rds"
     )
   ),
   compress = "gz"

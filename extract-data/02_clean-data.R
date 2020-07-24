@@ -23,10 +23,7 @@ scot_data <-
   read_rds(
     here(
       "data",
-      paste0(
-        latest_extract_date(),
-        "_scot-data.rds"
-      )
+      str_glue("{latest_extract_date()}_scot-data.rds")
     )
   )
 
@@ -82,6 +79,11 @@ scot_data %<>%
 
 
 ### 4 - General data cleaning ----
+
+# Fix age and sex where we have CHI number
+scot_data %<>%
+  fix_age_sex_from_chi()
+
 
 # Dates
 scot_data %<>%
@@ -355,9 +357,8 @@ write_rds(
   scot_data,
   here(
     "data",
-    paste0(
-      latest_extract_date(),
-      "_scot-data-clean.rds"
+    str_glue(
+      "{latest_extract_date()}_scot-data-clean.rds"
     )
   ),
   compress = "gz"

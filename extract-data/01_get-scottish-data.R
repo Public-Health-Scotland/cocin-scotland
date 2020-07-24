@@ -34,29 +34,19 @@ if (is.na(Sys.getenv("ccp_token", unset = NA))) {
 }
 
 
-# Call API allowing for up to 5 tries
-tries <- 0
-extract <- NA
-
 ## Note - need to come off the VPN connection for the below
-while (tries == 0 | (tries < 5 & inherits(extract, "try-error"))) {
-
-  # Avoid using the API on the hour as this is when a lot of reports refresh
-  while (minute(Sys.time()) %in% c(59, 0:5)) {
-    message("Waiting till after the hour to avoid overloading the API")
-    Sys.sleep(30)
-  }
-
-  print(tries)
-  extract <- try(extract <- redcap_read(
-    redcap_uri = "https://ncov.medsci.ox.ac.uk/api/",
-    export_data_access_groups = TRUE,
-    token = Sys.getenv("ccp_token"),
-    fields = "subjid"
-  )$data)
-  tries <- tries + 1
-  Sys.sleep(10)
+# Avoid using the API on the hour as this is when a lot of reports refresh
+while (minute(Sys.time()) %in% c(59, 0:5)) {
+  message("Waiting till after the hour to avoid overloading the API")
+  Sys.sleep(30)
 }
+
+extract <- redcap_read(
+  redcap_uri = "https://ncov.medsci.ox.ac.uk/api/",
+  export_data_access_groups = TRUE,
+  token = Sys.getenv("ccp_token"),
+  fields = "subjid"
+)$data
 
 
 ### 2 - Select Scottish data ----
@@ -115,29 +105,21 @@ extract %<>%
 
 scotpat <- unique(extract$subjid)
 
-# Call API allowing for up to 5 tries
-tries <- 0
-extract <- NA
 
-## Note - need to come off the VPN connection for the below
-while (tries == 0 | (tries < 5 & inherits(extract, "try-error"))) {
-
-  # Avoid using the API on the hour as this is when a lot of reports refresh
-  while (minute(Sys.time()) %in% c(59, 0:5)) {
-    message("Waiting till after the hour to avoid overloading the API")
-    Sys.sleep(30)
-  }
-
-  print(tries)
-  extract <- redcap_read(
-    redcap_uri = "https://ncov.medsci.ox.ac.uk/api/",
-    export_data_access_groups = TRUE,
-    token = Sys.getenv("ccp_token"),
-    records = scotpat
-  )$data
-  tries <- tries + 1
-  Sys.sleep(10)
+# Avoid using the API on the hour as this is when a lot of reports refresh
+while (minute(Sys.time()) %in% c(59, 0:5)) {
+  message("Waiting till after the hour to avoid overloading the API")
+  Sys.sleep(30)
 }
+
+print(tries)
+extract <- redcap_read(
+  redcap_uri = "https://ncov.medsci.ox.ac.uk/api/",
+  export_data_access_groups = TRUE,
+  token = Sys.getenv("ccp_token"),
+  records = scotpat
+)$data
+
 
 # Record extract time
 extract_date <- Sys.time()
@@ -166,9 +148,9 @@ rm(data)
 # Data extract
 write_rds(
   extract,
-  here("data", paste0(
-    format(extract_date, "%Y-%m-%d_%H-%M"),
-    "_scot-data.rds"
+  here("data", str_glue(
+    "{date}_scot-data.rds",
+    date = format(extract_date, "%Y-%m-%d_%H-%M")
   )),
   compress = "gz"
 )
@@ -177,9 +159,9 @@ write_rds(
 write_csv(
   extract %>%
     dplyr::count(hb_name, redcap_data_access_group, hospid, location_name),
-  here("data", paste0(
-    format(extract_date, "%Y-%m-%d_%H-%M"),
-    "_scot-record-summary.csv"
+  here("data", str_glue(
+    "{date}_scot-record-summary.csv",
+    date = format(extract_date, "%Y-%m-%d_%H-%M")
   ))
 )
 
@@ -188,7 +170,7 @@ redcap_metadata_read(
   redcap_uri = "https://ncov.medsci.ox.ac.uk/api/",
   token = Sys.getenv("ccp_token")
 )$data %>%
-  write_csv(path("data", str_glue("{today()}_COCIN_metadata.csv")))
+  write_csv(here("data", str_glue("{today()}_COCIN_metadata.csv")))
 
 
 ### END OF SCRIPT ###

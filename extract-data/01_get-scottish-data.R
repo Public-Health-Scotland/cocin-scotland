@@ -112,7 +112,6 @@ while (minute(Sys.time()) %in% c(59, 0:5)) {
   Sys.sleep(30)
 }
 
-print(tries)
 extract <- redcap_read(
   redcap_uri = "https://ncov.medsci.ox.ac.uk/api/",
   export_data_access_groups = TRUE,

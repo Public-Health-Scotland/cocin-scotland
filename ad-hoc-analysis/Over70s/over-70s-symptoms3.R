@@ -4,6 +4,12 @@ source("extract-data/00_setup-environment.R")
 
 # Read data ---------------------------------------------------------------
 
+if (date(latest_extract_date()) < (today() - days(3))) {
+  message("local extract is older than RAPID-ECOSS file")
+  source("extract-data/01_get-scottish-data.R")
+  source("extract-data/02_clean-data.R")
+}
+
 scot_data <- here("data", str_glue("{date}_scot-data-clean.rds", date = latest_extract_date())) %>%
   read_rds()
 
@@ -15,11 +21,13 @@ topline <- scot_data %>%
     subjid,
     age,
     hostdat,
+    dsstdat,
+    corna_mbcat,
     fever_ceoccur_v2:bleed_ceoccur_v2,
     -ageusia_ceoccur_v2,
     ageusia_ceoccur_v2,
     anosmia_ceoccur_v2
-  ) %>% 
+  ) %>%
   rename(
     "Fever" = fever_ceoccur_v2,
     "Cough" = cough_ceoccur_v2,
@@ -34,12 +42,12 @@ topline <- scot_data %>%
     "Joint pain" = jointpain_ceoccur_v2,
     "Fatigue" = fatigue_ceoccur_v2,
     "Shortness of breath" = shortbreath_ceoccur_v2,
-    "Lower chest wall indrawing" = lowerchest_ceoccur_v2,
+    "Lower chest wall in-drawing" = lowerchest_ceoccur_v2,
     "Headache" = headache_ceoccur_v2,
     "Confusion" = confusion_ceoccur_v2,
     "Seizures" = seizures_cecoccur_v2,
     "Abdominal pain" = abdopain_ceoccur_v2,
-    "Nausa/vomiting" = vomit_ceoccur_v2,
+    "Nausea/vomiting" = vomit_ceoccur_v2,
     "Diarrhoea" = diarrhoea_ceoccur_v2,
     "Conjunctivitis" = conjunct_ceoccur_v2,
     "Skin rash" = rash_ceoccur_v2,
@@ -62,29 +70,78 @@ topline <- scot_data %>%
     ~ factor(.) %>%
       fct_relabel(~ c("YES", "NO", "Unknown")) %>%
       fct_explicit_na(na_level = "Unknown")
-  ) %>% 
+  ) %>%
   left_join(
     filter_at(., vars(Fever:Anosmia), all_vars(. != "YES")) %>%
-    mutate("Asymptomatic (inc Unknown)" = "YES") %>%
-    select(subjid, "Asymptomatic (inc Unknown)"),
-  by = "subjid"
+      mutate("No symptoms presenting (inc Unknown)" = "YES") %>%
+      select(subjid, "No symptoms presenting (inc Unknown)"),
+    by = "subjid"
   ) %>%
   left_join(
     filter_at(., vars(Fever:Anosmia), all_vars(. == "NO")) %>%
-      mutate("Asymptomatic (all No)" = "YES") %>%
-      select(subjid, "Asymptomatic (all No)"),
+      mutate("No symptoms presenting (all No)" = "YES") %>%
+      select(subjid, "No symptoms presenting (all No)"),
     by = "subjid"
   ) %>%
   mutate_at(
-    vars("Asymptomatic (inc Unknown)", "Asymptomatic (all No)"),
-    ~ recode(., .missing = "NO") %>% 
+    vars("No symptoms presenting (inc Unknown)", "No symptoms presenting (all No)"),
+    ~ recode(., .missing = "NO") %>%
       factor(levels = c("YES", "NO"))
   )
 
-n_before <- topline %>% filter(admission == "Before 30th April") %>% nrow()
-n_after <- topline %>% filter(admission == "On or after 30th April") %>% nrow()
+n_before <- topline %>%
+  filter(admission == "Before 30th April") %>%
+  nrow()
+n_after <- topline %>%
+  filter(admission == "On or after 30th April") %>%
+  nrow()
+
+n_before_pos <- topline %>%
+  filter(admission == "Before 30th April") %>%
+  filter(corna_mbcat == "YES - Confirmed") %>%
+  nrow()
+n_after_pos <- topline %>%
+  filter(admission == "On or after 30th April") %>%
+  filter(corna_mbcat == "YES - Confirmed") %>%
+  nrow()
+
+n_before_unknown <- topline %>%
+  filter(admission == "Before 30th April") %>%
+  filter_at(vars(Fever:Anosmia), all_vars(. == "Unknown")) %>%
+  nrow()
+n_after_unknown <- topline %>%
+  filter(admission == "On or after 30th April") %>%
+  filter_at(vars(Fever:Anosmia), all_vars(. == "Unknown")) %>%
+  nrow()
+
+
+earliest_recruitment <- topline %>%
+  filter(dsstdat >= dmy(01012020)) %>%
+  pull(dsstdat) %>%
+  min()
+latest_recruitment <- topline %>%
+  pull(dsstdat) %>%
+  max(na.rm = TRUE)
 
 ggplot(topline, aes(x = hostdat)) +
+  geom_histogram(binwidth = 1) +
+  geom_vline(xintercept = ymd("2020-04-30")) +
+  theme_minimal()
+
+ggplot(
+  topline %>%
+    select(dsstdat, Ageusia, Anosmia) %>%
+    pivot_longer(
+      cols = c(Ageusia, Anosmia),
+      names_to = "Symptom",
+      values_to = "Status"
+    ) %>%
+    filter(Status != "Unknown"),
+  aes(
+    x = dsstdat,
+    fill = Symptom
+  )
+) +
   geom_histogram(binwidth = 1) +
   geom_vline(xintercept = ymd("2020-04-30")) +
   theme_minimal()
@@ -97,22 +154,28 @@ ggplot(topline %>% filter(hostdat >= dmy(01012020)), aes(x = hostdat)) +
 
 symptom_data <- topline %>%
   pivot_longer(
-    cols = c(Fever:Anosmia, "Asymptomatic (inc Unknown)", "Asymptomatic (all No)"),
+    cols = c(Fever:Anosmia, "No symptoms presenting (inc Unknown)", "No symptoms presenting (all No)"),
     names_to = "Symptom",
     values_to = "Status",
     values_drop_na = TRUE
-  ) %>% 
-  mutate(Status = recode(Status, "YES" = "Yes", "NO" = "No")) %>% 
+  ) %>%
+  mutate(Status = recode(Status, "YES" = "Yes", "NO" = "No")) %>%
   group_by(admission, Symptom) %>%
   count(Status) %>%
   ungroup()
+
+# Fix for Anosmia
+if ((symptom_data %>% filter(admission == "Before 30th April", Symptom == "Anosmia", Status == "Yes") %>% nrow()) == 0) {
+  symptom_data <- symptom_data %>%
+    add_row(admission = "Before 30th April", Symptom = "Anosmia", Status = "Yes", n = 0)
+}
 
 symp_data_levels_order <- symptom_data %>%
   filter(
     Status == "Yes",
     admission == "Before 30th April"
   ) %>%
-  mutate(order = if_else(Symptom %in% c("Asymptomatic (inc Unknown)", "Asymptomatic (all No)"),
+  mutate(order = if_else(Symptom %in% c("No symptoms presenting (inc Unknown)", "No symptoms presenting (all No)"),
     1, 0
   )) %>%
   arrange(order, desc(n)) %>%
@@ -122,35 +185,33 @@ symp_data_levels_order <- symptom_data %>%
 cluster_data <- topline %>%
   left_join(
     filter_at(., vars("Ear pain", "Confusion", "Seizures", "Skin rash", "Skin ulcers", "Conjunctivitis", "Bleeding (Haemorrhage)", "Headache"), any_vars(. == "YES")) %>%
-      mutate(Neurocutaneous = "YES") %>%
+      mutate(Neurocutaneous = "YES" %>% factor(levels = c("YES", "NO"))) %>%
       select(subjid, Neurocutaneous)
-  ) %>% 
+  ) %>%
   left_join(
-    filter_at(., vars("Fatigue", "Muscle ache", "Lymphadenopathy", "Fever"), any_vars(. == "YES")) %>%
-      mutate(Generalised = "YES") %>%
+    filter_at(., vars("Fatigue", "Muscle ache", "Lymphadenopathy", "Fever", "Joint pain"), any_vars(. == "YES")) %>%
+      mutate(Generalised = "YES" %>% factor(levels = c("YES", "NO"))) %>%
       select(subjid, Generalised)
-  ) %>% 
+  ) %>%
   left_join(
-    filter_at(., vars("Diarrhoea", "Nausa/vomiting", "Abdominal pain", "Joint pain"), any_vars(. == "YES")) %>%
-      mutate(Gastrointestinal = "YES") %>%
+    filter_at(., vars("Diarrhoea", "Nausea/vomiting", "Abdominal pain"), any_vars(. == "YES")) %>%
+      mutate(Gastrointestinal = "YES" %>% factor(levels = c("YES", "NO"))) %>%
       select(subjid, Gastrointestinal)
   ) %>%
   left_join(
-    filter_at(., vars("Cough", "Cough (blood)", "Cough (sputum)", "Wheeze", "Shortness of breath", "Sore throat", "Chest pain", "Lower chest wall indrawing", "Runny nose"), any_vars(. == "YES")) %>%
-      mutate(Respiratory = "YES") %>%
+    filter_at(., vars("Cough", "Cough (blood)", "Cough (sputum)", "Wheeze", "Shortness of breath", "Sore throat", "Chest pain", "Lower chest wall in-drawing", "Runny nose"), any_vars(. == "YES")) %>%
+      mutate(Respiratory = "YES" %>% factor(levels = c("YES", "NO"))) %>%
       select(subjid, Respiratory)
   ) %>%
   left_join(
     filter_at(., vars("Cough", "Cough (blood)", "Cough (sputum)", "Fever", "Ageusia", "Anosmia"), any_vars(. == "YES")) %>%
-      mutate(Key = "YES") %>%
+      mutate(Key = "YES" %>% factor(levels = c("YES", "NO"))) %>%
       select(subjid, Key)
-  ) %>% 
-  select(subjid, admission, "Asymptomatic (inc Unknown)":Key) %>%
+  ) %>%
+  select(subjid, admission, "No symptoms presenting (inc Unknown)":Key) %>%
   mutate_at(
     vars(-subjid, -admission),
-    ~ replace_na(., "NO") %>%
-      factor() %>%
-      fct_relabel(~ c("NO", "YES"))
+    ~ replace_na(., "NO")
   ) %>%
   pivot_longer(
     cols = c(-subjid, -admission),
@@ -170,9 +231,9 @@ cluster_data_levels_order <-
     Status == "Yes",
     admission == "Before 30th April"
   ) %>%
-  mutate(order = if_else(Cluster %in% c("Asymptomatic (inc Unknown)", "Asymptomatic (all No)"),
-                         1, 0)
-         ) %>%
+  mutate(order = if_else(Cluster %in% c("No symptoms presenting (inc Unknown)", "No symptoms presenting (all No)"),
+    1, 0
+  )) %>%
   arrange(order, desc(n)) %>%
   pull(Cluster)
 
@@ -215,40 +276,8 @@ tbl_summary <- scot_data %>%
 tbl_all_symptoms <- symptom_data %>%
   mutate(Status = recode(Status, "Unknown" = "No")) %>%
   group_by(admission, Symptom, Status) %>%
-  summarise(n = sum(n)) %>% 
-  mutate(total = if_else(admission == "Before 30th April", n_before, n_after)) %>% 
-  group_by(admission, Symptom, Status) %>%
-  mutate(prop = n / total) %>% 
-  ungroup() %>%
-  pivot_wider(
-    names_from = admission,
-    values_from = c(n, total, prop),
-    values_fill = 0
-  ) %>%
-  filter(`prop_On or after 30th April` != 0) %>%
-  rowwise() %>%
-  mutate(significant = if_else(prop.test(
-    x = c(`n_Before 30th April`, `n_On or after 30th April`),
-    n = c(n_before, n_after)
-  )$p.value < 0.5,
-  "Yes",
-  "No"
-  )) %>%
-  mutate(direction = if_else(significant == "Yes",
-    if_else(`prop_Before 30th April` > `prop_On or after 30th April`,
-      "decrease",
-      "increase"
-    ),
-    NA_character_
-  )) %>%
-  filter(Status == "Yes") %>% 
-  select(-Status) %>% 
-  arrange(desc(significant), desc(`n_Before 30th April`))
-
-tbl_all_symptoms_ex_unknown <- symptom_data %>%
-  filter(Status != "Unknown") %>% 
-  group_by(admission, Symptom) %>%
-  mutate(total = sum(n, na.rm = TRUE)) %>%
+  summarise(n = sum(n)) %>%
+  mutate(total = if_else(admission == "Before 30th April", n_before, n_after)) %>%
   group_by(admission, Symptom, Status) %>%
   mutate(prop = n / total) %>%
   ungroup() %>%
@@ -259,28 +288,64 @@ tbl_all_symptoms_ex_unknown <- symptom_data %>%
   ) %>%
   filter(`prop_On or after 30th April` != 0) %>%
   rowwise() %>%
-  mutate(significant = if_else(prop.test(
+  mutate(Significant = if_else(prop.test(
     x = c(`n_Before 30th April`, `n_On or after 30th April`),
     n = c(n_before, n_after)
-  )$p.value < 0.5,
+  )$p.value < 0.05,
   "Yes",
   "No"
   )) %>%
-  mutate(direction = if_else(significant == "Yes",
-                             if_else(`prop_Before 30th April` > `prop_On or after 30th April`,
-                                     "decrease",
-                                     "increase"
-                             ),
-                             NA_character_
+  mutate(Direction = if_else(Significant == "Yes",
+    if_else(`prop_Before 30th April` > `prop_On or after 30th April`,
+      "Decrease",
+      "Increase"
+    ),
+    NA_character_
   )) %>%
-  filter(Status == "Yes") %>% 
-  select(-Status) %>% 
-  arrange(desc(significant), desc(`n_Before 30th April`))
+  filter(Status == "Yes") %>%
+  select(-Status) %>%
+  arrange(desc(Significant), desc(`n_Before 30th April`))
+
+tbl_all_symptoms_ex_unknown <- symptom_data %>%
+  filter(Status != "Unknown") %>%
+  group_by(admission, Symptom) %>%
+  mutate(total = sum(n, na.rm = TRUE)) %>%
+  group_by(admission, Symptom, Status) %>%
+  mutate(prop = n / total) %>%
+  ungroup() %>%
+  pivot_wider(
+    names_from = admission,
+    values_from = c(n, total, prop),
+    values_fill = 0
+  ) %>%
+  rowwise() %>%
+  mutate(Significant = if_else(prop.test(
+    x = c(`n_Before 30th April`, `n_On or after 30th April`),
+    n = c(n_before, n_after)
+  )$p.value < 0.05,
+  "Yes",
+  "No"
+  )) %>%
+  mutate(Direction = if_else(Significant == "Yes",
+    if_else(`prop_Before 30th April` > `prop_On or after 30th April`,
+      "Decrease",
+      "Increase"
+    ),
+    NA_character_
+  )) %>%
+  filter(Status == "Yes") %>%
+  select(-Status) %>%
+  mutate(order = if_else(Symptom %in% c("No symptoms presenting (inc Unknown)", "No symptoms presenting (all No)"),
+    0, 1
+  )) %>%
+  arrange(order, desc(Significant), desc(`n_Before 30th April`)) %>%
+  select(-order)
 
 tbl_clusters <- cluster_data %>%
-  mutate(total = if_else(admission == "Before 30th April", n_before, n_after)) %>% 
+  filter(!(Cluster %in% c("No symptoms presenting (inc Unknown)", "No symptoms presenting (all No)"))) %>%
+  mutate(total = if_else(admission == "Before 30th April", n_before, n_after)) %>%
   group_by(admission, Cluster, Status) %>%
-  mutate(prop = n / total) %>% 
+  mutate(prop = n / total) %>%
   ungroup() %>%
   pivot_wider(
     names_from = admission,
@@ -289,34 +354,35 @@ tbl_clusters <- cluster_data %>%
   ) %>%
   filter(`prop_On or after 30th April` != 0) %>%
   rowwise() %>%
-  mutate(significant = if_else(prop.test(
+  mutate(Significant = if_else(prop.test(
     x = c(`n_Before 30th April`, `n_On or after 30th April`),
     n = c(n_before, n_after)
-  )$p.value < 0.5,
+  )$p.value < 0.05,
   "Yes",
   "No"
   )) %>%
-  mutate(direction = if_else(significant == "Yes",
-                             if_else(`prop_Before 30th April` > `prop_On or after 30th April`,
-                                     "decrease",
-                                     "increase"
-                             ),
-                             NA_character_
+  mutate(Direction = if_else(Significant == "Yes",
+    if_else(`prop_Before 30th April` > `prop_On or after 30th April`,
+      "Decrease",
+      "Increase"
+    ),
+    NA_character_
   )) %>%
-  filter(Status == "Yes") %>% 
-  select(-Status) %>% 
-  arrange(desc(significant), desc(`n_Before 30th April`))
+  filter(Status == "Yes") %>%
+  select(-Status) %>%
+  arrange(desc(Significant), desc(`n_Before 30th April`))
 
 
 # Plots -------------------------------------------------------------------
 
-plt_significant_symptoms <- symptom_data %>%
+plt_Significant_symptoms <- symptom_data %>%
   # Status a factor ordered by levels == Yes value
   mutate(
     Symptom = factor(Symptom, symp_data_levels_order),
-    Status = factor(Status, c("Yes", "Unknown", "No")),
-  ) %>% 
-  filter(Symptom %in% (tbl_all_symptoms %>% filter(significant == "Yes") %>% pull(Symptom))) %>% 
+    Status = factor(Status, c("Yes", "Unknown", "No"))
+  ) %>%
+  filter(Symptom %in% (tbl_all_symptoms %>% filter(Significant == "Yes") %>% pull(Symptom))) %>%
+  filter(!(Symptom %in% c("No symptoms presenting (inc Unknown)", "No symptoms presenting (all No)", "Ageusia", "Anosmia"))) %>%
   ggplot(aes(x = admission, y = n, fill = fct_rev(Status))) +
   geom_col(position = "fill") +
   theme_minimal() +
@@ -324,13 +390,13 @@ plt_significant_symptoms <- symptom_data %>%
   ylab("Proportion") +
   scale_x_discrete("Admission period") +
   scale_fill_brewer("") +
-  scale_y_continuous("Patients with \nsymptom (%)", labels = scales::percent) +
+  scale_y_continuous("Patients with symptom (%)", labels = scales::percent) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   facet_grid(~Symptom, labeller = labeller(Symptom = label_wrap_gen(10)))
-plt_significant_symptoms
 
 plt_clusters <- cluster_data %>%
-  mutate(Cluster = factor(Cluster, cluster_data_levels_order)) %>% 
+  mutate(Cluster = factor(Cluster, cluster_data_levels_order)) %>%
+  filter(!(Cluster %in% c("No symptoms presenting (inc Unknown)", "No symptoms presenting (all No)", "Ageusia", "Anosmia"))) %>%
   ggplot(aes(x = admission, y = n, fill = fct_rev(Status))) +
   geom_col(position = "fill") +
   theme_minimal() +
@@ -338,10 +404,10 @@ plt_clusters <- cluster_data %>%
   ylab("Proportion") +
   scale_x_discrete("Admission period") +
   scale_fill_manual("", values = (c("#deebf7", "#3182bd"))) +
-  scale_y_continuous("Patients with any \nsymptom in \ncluster (%)", labels = scales::percent) +
+  scale_y_continuous("Patients with any symptom \nin cluster (%)", labels = scales::percent) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   facet_grid(~Cluster, labeller = labeller(Cluster = label_wrap_gen(10)))
-plt_clusters
+
 
 
 # Output ------------------------------------------------------------------
@@ -349,25 +415,45 @@ library(writexl)
 
 tbl_overview <- tibble(
   Info = c("Extract Date", "Earliest admission", "Latest admission", "Admission 1st Quartile", "Admission 3rd Quartile"),
-  value = c(date(latest_extract_date()), min(topline$hostdat), max(topline$hostdat), summary(topline$hostdat)[2], summary(topline$hostdat)[5])
+  Value = c(date(latest_extract_date()), min(topline$hostdat), max(topline$hostdat), summary(topline$hostdat)[2], summary(topline$hostdat)[5])
 )
 
-write_xlsx(x = list(
+tables <- list(
   "Notes" = tbl_overview,
   "Summary" = tbl_summary,
   "All symptoms" = tbl_all_symptoms,
   "All symptoms (ex unknown)" = tbl_all_symptoms_ex_unknown,
   "Symptom clusters" = tbl_clusters
-), path = str_glue("output/{date}_over70_symptoms.xlsx", date = date(latest_extract_date())))
+)
 
-tibble(Info = c("Extract Date", "Earliest admission", "Latest admission", "Admission 1st Quartile", "Admission 3rd Quartile"), 
-       value = c(date(latest_extract_date()), min(topline$hostdat), max(topline$hostdat), summary(topline$hostdat)[2], summary(topline$hostdat)[5]))
+# Tidy up table output to percentags
+tables <- tables %>%
+  map(~ mutate_at(.x, vars(starts_with("prop_")), ~ scales::percent(.)) %>%
+    rename_at(vars(starts_with("n_")), ~ str_replace(., "^n_(.+?)$", "Yes \\1")) %>%
+    rename_at(vars(starts_with("total_")), ~ str_replace(., "^total_(.+?)$", "Total \\1")) %>%
+    rename_at(vars(starts_with("prop_")), ~ str_replace(., "^prop_(.+?)$", "Percentage \\1")) %>%
+    rename_at(vars(matches("Significant")), ~"Significant Change?") %>%
+    rename_at(vars(matches("Direction")), ~"Direction of change (if significant)"))
 
-ggsave(str_glue("output/{date}_over70_significant_symptoms.png", 
-                date = date(latest_extract_date())), 
-       plt_significant_symptoms)
-ggsave(str_glue("output/{date}_over70_clusters.png", 
-                date = date(latest_extract_date())), 
-       plt_clusters)
+write_xlsx(
+  x = tables,
+  path = str_glue("output/{date}_over70_symptoms.xlsx",
+    date = date(latest_extract_date())
+  )
+)
 
-       
+ggsave(str_glue("output/{date}_over70_Significant_symptoms.png",
+  date = date(latest_extract_date())
+),
+plt_Significant_symptoms,
+width = 12,
+height = 9
+)
+
+ggsave(str_glue("output/{date}_over70_clusters.png",
+  date = date(latest_extract_date())
+),
+plt_clusters,
+width = 9,
+height = 9
+)

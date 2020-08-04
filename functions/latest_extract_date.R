@@ -6,6 +6,7 @@ latest_extract_date <- function() {
   ) %>%
     str_sub(1, 16) %>%
     max()
+    if_else(stringr::str_detect(., regex("scot-data", ignore_case = TRUE)), ., NA_character_) %>%
 }
 
 

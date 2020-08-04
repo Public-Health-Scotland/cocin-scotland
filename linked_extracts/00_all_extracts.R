@@ -14,18 +14,18 @@ if (floor_date(today(), "week") > floor_date(ymd_hm(latest_extract_date()), "wee
 }
 
 # Copy to server
-cocin_data <- path(here("data", str_glue("{latest_extract_date()}_scot-data-clean.rds")))
-cocin_metadata <- path(here("data", str_glue("{date(latest_extract_date())}_COCIN-metadata.csv")))
+cocin_data_local <- path(here("data", str_glue("{latest_extract_date()}_scot-data-clean.rds")))
+cocin_metadata_local <- path(here("data", str_glue("{date(latest_extract_date())}_COCIN-metadata.csv")))
 
-if (file_exists(cocin_data)) {
+if (file_exists(cocin_data_local)) {
   file_copy(
-    path = cocin_data,
+    path = cocin_data_local,
     new_path = path(server_dir, str_glue("{date(latest_extract_date())}_cocin-clean-data.rds"))
   )
 
-  if (file_exists(cocin_metadata)) {
+  if (file_exists(cocin_metadata_local)) {
     file_copy(
-      path = cocin_metadata,
+      path = cocin_metadata_local,
       new_path = path(server_dir, str_glue("{date(latest_extract_date())}_cocin-metadata.csv"))
     )
   }
@@ -37,12 +37,12 @@ source("extract-data/03_read_RAPID_data.R")
 source("ad-hoc-analysis/tidy_RAPID_data.R")
 
 # Copy to server
-rapid_data <- path(here("data", str_glue("{date(latest_extract_date())}_RAPID-cleaned-filtered.rds")))
+rapid_data_local <- path(here("data", str_glue("{date(latest_extract_date())}_RAPID-cleaned-filtered.rds")))
 
 
-if (file_exists(rapid_data)) {
+if (file_exists(rapid_data_local)) {
   file_copy(
-    path = rapid_data,
+    path = rapid_data_local,
     new_path = path(server_dir, str_glue("{date(latest_extract_date())}_RAPID-cleaned-filtered.rds"))
   )
 }

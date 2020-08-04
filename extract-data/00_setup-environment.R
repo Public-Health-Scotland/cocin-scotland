@@ -35,13 +35,13 @@ purrr::walk(dir(here("functions"), full.names = TRUE), source)
 
 ### 3 - Create folders ---
 
-if (!is_dir(here("data"))) {
-  dir_create(here("data"))
-}
+dir_create(here("data"))
 
-if (!is_dir(here("output"))) {
-  dir_create(here("output"))
-}
+dir_create(here("output"))
+
+
+server_dir <- path(stats_server_path(), "PHSCOVID19_Analysis/Hospital_linked_dataset/raw_data")
+dir_create(server_dir)
 
 
 ### END OF SCRIPT ###

@@ -225,7 +225,7 @@ coded_as_covid <- coded_as_covid %>%
     )
   ))
 
-
+rm(df_mini, ep, episode_break_days, i, temporal_link_ids, temporal_values)
 
 test_in_stay <- rapid_cocin_filtered %>%
   # Remove any CHIs which already have a matched admission
@@ -338,7 +338,7 @@ ggplot2::ggplot(covid_admissions) +
 #       str_c("NHS ", .)
 #   )
 
-rm(coded_as_covid, rapid_cocin_filtered, test_before_stay, test_in_stay)
+rm(cocin_match, coded_as_covid, rapid_cocin_filtered, test_before_stay, test_in_stay, reason_levels)
 
 rapid_date <- file_info(path(here("data"),  "rapid_ecoss_joined.rds")) %>% pull(modification_time) %>% date()
 write_rds(covid_admissions, 

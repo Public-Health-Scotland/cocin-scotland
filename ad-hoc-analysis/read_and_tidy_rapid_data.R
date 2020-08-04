@@ -189,38 +189,96 @@ cocin_match <- rapid_cocin_filtered %>%
   filter(cocin_admission) %>%
   mutate(reason = "COCIN matched")
 
+episode_break_days <- 14
 # Find paitents who had a positive test during the stay and use that
 coded_as_covid <- rapid_cocin_filtered %>%
   # Remove any CHIs which already have a matched admission
   anti_join(cocin_match, by = "chi_number") %>%
   filter(covid %in% c("Lab comfirmed", "Clinically suspected")) %>%
-  # If we have multiple admission close in time all with good diag data then merge them
-  group_by(chi_number, temporal_link_id) %>%
-  # Use last as then we are more likely to avoid an initial transfer hospital
-  summarise_all(~ last(na.omit(.))) %>%
+  group_by(chi_number) %>%
+  mutate(epnum = row_number()) %>%
   ungroup() %>%
-  group_by(chi_number) %>% 
-  filter(n() > 1) %>% 
-  ungroup() %>% 
-  mutate(readmission = if_else(chi_number == lag(chi_number), 
-                               if_else((lag(dis_date) - adm_date) > 14, 
-                                       1L, 
-                                       0L), 
-                               0L)
-         ) %>% View()
-  # Arrange to keep the earliest admission if we still have multiple
-  arrange(desc(adm_date)) %>%
-  distinct(chi_number, .keep_all = TRUE) %>%
-  mutate(reason = case_when(
-    covid == "Lab comfirmed" ~ case_when(result == 1 ~ "Lab comfirmed - ECOSS +ve & Diag",
-                                         result == 0 ~ "Lab comfirmed - ECOSS -ve & Diag",
-                                         is.na(result) ~ "Lab comfirmed - Diag, no ECOSS test"
+  mutate(date_diff = time_length(dis_date %--% lead(adm_date), "days")) %>%
+  mutate(
+    temporal_link_forward = case_when(
+      date_diff <= episode_break_days & lead(epnum) != 1 ~ TRUE,
+      TRUE ~ FALSE
     ),
-    covid == "Clinically suspected" ~ case_when(result == 1 ~ "Clinically suspected - ECOSS +ve & Diag",
-                                              result == 0 ~ "Clinically suspected - ECOSS -ve & Diag",
-                                              is.na(result) ~ "Clinically suspected - Diag, no ECOSS test"
+    temporal_link_backward = case_when(
+      lag(temporal_link_forward) == TRUE ~ TRUE,
+      TRUE ~ FALSE
+    )
+  ) %>%
+  group_by(chi_number)
+
+# only do episode linking on stripped down dataframe, so things are marginally less grim.
+# notably, do not need to link time or location for CHIs that only have one associated episode
+df_mini <- coded_as_covid %>%
+  filter(n() > 1) %>%
+  ungroup() %>%
+  select(chi_number, epnum, temporal_link_backward)
+
+temporal_link_ids <- numeric(dim(df_mini)[1])
+
+# construct linking identifier vectors (could rewrite in C/Rcpp for extra speed?)
+chis <- df_mini$chi_number
+temporal_values <- df_mini$temporal_link_backward
+ep <- df_mini$epnum
+
+for (i in 1:length(chis)) {
+  if (ep[i] == 1) {
+    temporal_link_ids[i] <- 1
+  } else {
+    if (chis[i] == chis[i - 1]) {
+      temporal_link_ids[i] <- if_else(temporal_values[i] == TRUE, temporal_link_ids[i - 1], temporal_link_ids[i - 1] + 1)
+    }
+  }
+}
+
+# add the linking identifiers back into the dataframe
+df_mini <- df_mini %>%
+  ungroup() %>%
+  mutate(episode_break_link = temporal_link_ids)
+
+coded_as_covid <- coded_as_covid %>%
+  left_join(df_mini) %>%
+  ungroup() %>%
+  mutate(episode_break_link = replace_na(episode_break_link, 1)) %>%
+  select(-ends_with("_forward"), -ends_with("_backward"), -starts_with("date_diff")) %>%
+  mutate(los = time_length(adm_date %--% dis_date, "days")) %>%
+  group_by(chi_number, episode_break_link) %>%
+  summarise(
+    adm_date = min(adm_date),
+    dis_date = max(dis_date),
+    los = sum(los),
+    test_date = first(test_date),
+    result = first(result),
+    hospital_of_treatment_code = last(na.omit(hospital_of_treatment_code)),
+    age = first(na.omit(age)),
+    sex = first(na.omit(sex)),
+    covid = last(covid)
+  ) %>%
+  mutate(los = if_else(los > time_length(adm_date %--% dis_date, "days"), time_length(adm_date %--% dis_date, "days"), los)) %>%
+  group_by(chi_number) %>%
+  mutate(
+    ep_num = row_number(),
+    readmission = if_else(ep_num > 1, 1L, 0L),
+    reinfection = if_else(readmission == 1 & (time_length(lag(dis_date) %--% adm_date, "days") >= 42), 1L, 0L)
+  ) %>%
+  ungroup() %>%
+  mutate(reason = case_when(
+    covid == "Lab comfirmed" ~ case_when(
+      result == 1 ~ "Lab comfirmed - ECOSS +ve & Diag",
+      result == 0 ~ "Lab comfirmed - ECOSS -ve & Diag",
+      is.na(result) ~ "Lab comfirmed - Diag, no ECOSS test"
+    ),
+    covid == "Clinically suspected" ~ case_when(
+      result == 1 ~ "Clinically suspected - ECOSS +ve & Diag",
+      result == 0 ~ "Clinically suspected - ECOSS -ve & Diag",
+      is.na(result) ~ "Clinically suspected - Diag, no ECOSS test"
     )
   ))
+
 
 
 test_in_stay <- rapid_cocin_filtered %>%
@@ -280,12 +338,17 @@ covid_admissions <- bind_rows(
 )
 
 # Check we have one admission per CHI
-map(list(covid_admissions,cocin_match, coded_as_covid, test_before_stay, test_in_stay), ~ .x %>% count(chi_number) %>% count(n))
+map(list(covid_admissions, cocin_match, coded_as_covid, test_before_stay, test_in_stay), ~ .x %>%
+  count(chi_number) %>%
+  count(n))
 
 # Look at the reasons for each admission
 covid_admissions %>% count(reason)
 
-reason_levels <- covid_admissions %>% count(reason) %>% arrange(n) %>% pull(reason)
+reason_levels <- covid_admissions %>%
+  count(reason) %>%
+  arrange(n) %>%
+  pull(reason)
 
 
 # Plot the admission reason by admission date

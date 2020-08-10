@@ -204,7 +204,14 @@ coded_as_covid <- coded_as_covid %>%
     sex = first(na.omit(sex)),
     covid = last(covid)
   ) %>%
-  mutate(los = if_else(los > time_length(adm_date %--% dis_date, "days"), time_length(adm_date %--% dis_date, "days"), los)) %>%
+  # Clean up any los where this is longer than possible (caused by overlapping dates)
+  # The remove any los for episodes where the dates match the los
+  mutate(
+    derived_los = time_length(adm_date %--% dis_date, "days"),
+    los = if_else(los > derived_los, derived_los, los),
+    los = if_else(los == derived_los, NA_integer_, los)
+  ) %>%
+  select(-derived_los) %>%
   group_by(chi_number) %>%
   mutate(
     ep_num = row_number(),

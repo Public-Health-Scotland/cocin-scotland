@@ -12,20 +12,46 @@
 
 
 ### 1 - Load packages ----
-
-library(tidyverse)
-library(lubridate)
-library(finalfit)
-library(Hmisc)
-library(tidylog)
-library(janitor)
-library(magrittr)
-library(stringr)
-library(here)
-library(fs)
-library(REDCapR)
-library(writexl)
-library(scales)
+# Use the if require pattern so the package will be installed if needed
+if (!require(tidyverse)) {
+  install.packages("tidyverse")
+}
+if (!require(lubridate)) {
+  install.packages("lubridate")
+}
+if (!require(finalfit)) {
+  install.packages("finalfit")
+}
+if (!require(Hmisc)) {
+  install.packages("Hmisc")
+}
+if (!require(tidylog)) {
+  install.packages("tidylog")
+}
+if (!require(janitor)) {
+  install.packages("janitor")
+}
+if (!require(magrittr)) {
+  install.packages("magrittr")
+}
+if (!require(stringr)) {
+  install.packages("stringr")
+}
+if (!require(here)) {
+  install.packages("here")
+}
+if (!require(fs)) {
+  install.packages("fs")
+}
+if (!require(REDCapR)) {
+  install.packages("REDCapR")
+}
+if (!require(writexl)) {
+  install.packages("writexl")
+}
+if (!require(scales)) {
+  install.packages("scales")
+}
 
 
 ### 2 - Load functions ---

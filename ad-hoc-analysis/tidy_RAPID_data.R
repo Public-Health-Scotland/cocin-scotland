@@ -280,7 +280,19 @@ covid_admissions <- bind_rows(
   test_in_stay,
   test_before_stay,
   coded_as_covid
-)
+) %>%
+  select(
+    -temporal_link_id,
+    -location_link_id,
+    -episode_break_link,
+    -cocin_admission,
+    -covid_lab,
+    -covid_clinical,
+    -covid_other
+  ) %>%
+  replace_na(list(ep_num = 1L, readmission = 0L, reinfection = 0L)) %>%
+  # Temp measure, remove test date on readmissions (likely a 'better' test date in ECOSS)
+  mutate(test_date = if_else(readmission > 0, NA_Date_, test_date))
 
 # Check we have one admission per CHI
 map(list(covid_admissions, cocin_match, coded_as_covid, test_before_stay, test_in_stay), ~ .x %>%

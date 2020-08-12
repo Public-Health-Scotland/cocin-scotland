@@ -5,7 +5,7 @@ cocin_with_chi <- read_rds(path(server_dir, str_glue("{date}_cocin-clean-data.rd
   select(subjid, chi_number = nhs_chi, cocin_adm = hostdat, cocin_dis = dsstdtc) %>%
   mutate_at(vars(cocin_adm, cocin_dis), ~ as_date(.)) %>%
   group_by(subjid) %>%
-  summarise_all(~ first(na.omit(.))) %>%
+  summarise_all(coalesce) %>%
   filter(!is.na(chi_number), !is.na(cocin_adm))
 
 

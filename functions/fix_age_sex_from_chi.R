@@ -23,7 +23,7 @@ dob_from_chi <- function(chi) {
 fix_age_sex_from_chi <- function(data) {
   valid_chis <- data %>%
     dplyr::select(subjid, nhs_chi, agedat, age, sex, hostdat, daily_dsstdat, cestdat, dsstdat) %>%
-    dplyr::mutate_at(vars(hostdat, daily_dsstdat, cestdat, dsstdat), ~ as_date(.)) %>% 
+    dplyr::mutate_at(vars(agedat, hostdat, daily_dsstdat, cestdat, dsstdat), as_date) %>% 
     dplyr::group_by(subjid) %>%
     dplyr::summarise_all(~ dplyr::coalesce(.)) %>%
     dplyr::filter(phsmethods::chi_check(nhs_chi) == "Valid CHI")

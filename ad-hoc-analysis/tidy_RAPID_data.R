@@ -5,11 +5,12 @@ cocin_with_chi <- read_rds(path(server_dir, str_glue("{date}_cocin-clean-data.rd
   select(subjid, nhs_chi, hostdat, dsstdtc) %>%
   mutate_at(vars(hostdat, dsstdtc), as_date) %>%
   group_by(subjid) %>%
-  mutate(chi_number = first(na.omit(nhs_chi)),
-         cocin_adm = first(na.omit(hostdat)),
-         cocin_dis = first(na.omit(dsstdtc))
+  mutate(
+    chi_number = first(na.omit(nhs_chi)),
+    cocin_adm = first(na.omit(hostdat)),
+    cocin_dis = first(na.omit(dsstdtc))
   ) %>%
-  summarise_at(vars(chi_number, cocin_adm, cocin_dis), first) %>% 
+  summarise_at(vars(chi_number, cocin_adm, cocin_dis), first) %>%
   filter(!is.na(chi_number), !is.na(cocin_adm))
 
 
@@ -18,13 +19,12 @@ rapid <- read_rds(here("data", "rapid_ecoss_joined.rds")) %>%
   select(
     chi_number,
     rapid_id,
+    patient_dob,
     age_year,
+    patient_gender_description,
     sex,
-    admission_type,
-    admitted_transfer_from_type,
-    admitted_transfer_from_description,
-    management_of_patient,
-    management_of_patient_description,
+    patient_ethnic_group_description,
+    patient_postcode,
     diagnosis_1_code_4_char,
     diagnosis_2_code_4_char,
     diagnosis_3_code_4_char,
@@ -36,7 +36,9 @@ rapid <- read_rds(here("data", "rapid_ecoss_joined.rds")) %>%
     admission_date,
     discharge_date,
     hospital_of_treatment_code,
-    health_board_of_treatment,
+    ecossid,
+    forename,
+    surname,
     specimen_date,
     result
   )
@@ -46,22 +48,34 @@ rapid <- read_rds(here("data", "rapid_ecoss_joined.rds")) %>%
 rapid_stay_level <- rapid %>%
   group_by(chi_number, temporal_link_id, location_link_id) %>%
   summarise(
-    result = first(result), # Result is the result of the PCR test from ECOSS
+    dob = first(na.omit(patient_dob)),
+    age = first(age_year),
+    postcode = first(na.omit(patient_postcode)),
+    sex = first(na.omit(patient_gender_description)),
+    ethnicity = first(na.omit(patient_ethnic_group_description)),
     rapid_id = first(rapid_id),
     adm_date = min(admission_date),
     dis_date = max(discharge_date),
-    test_date = first(specimen_date),
-    hospital_of_treatment_code = first(hospital_of_treatment_code),
-    age = first(na.omit(age_year)),
-    sex = first(na.omit(sex)),
+    hospital_of_treatment_code = last(hospital_of_treatment_code),
     diag_1 = first(na.omit(diagnosis_1_code_4_char)),
     diag_2 = first(na.omit(diagnosis_2_code_4_char)),
     diag_3 = first(na.omit(diagnosis_3_code_4_char)),
     diag_4 = first(na.omit(diagnosis_4_code_4_char)),
     diag_5 = first(na.omit(diagnosis_5_code_4_char)),
-    diag_6 = first(na.omit(diagnosis_6_code_4_char))
+    diag_6 = first(na.omit(diagnosis_6_code_4_char)),
+    result = first(result), # Result is the result of the PCR test from ECOSS
+    ecossid = first(ecossid),
+    test_date = first(specimen_date),
+    forename = first(forename),
+    surname = first(surname)
   ) %>%
-  ungroup()
+  ungroup() %>%
+  # If we can calculate the age from the RAPID dob and adm_date
+  # Otherwise use the age which came from ECOSS
+  mutate(age = if_else(!is.na(time_length(dob %--% adm_date, "years")),
+    as.integer(floor(time_length(dob %--% adm_date, "years"))),
+    age
+  ))
 
 
 # Identify the records with multiple admissions so we can choose one
@@ -284,7 +298,7 @@ rapid_cocin_filtered %>%
   anti_join(test_in_stay, by = "chi_number") %>%
   # anti_join(other_coronavirus, by = "chi_number") %>%
   anti_join(test_before_stay, by = "chi_number") %>%
-  distinct(chi_number, result) %>% 
+  distinct(chi_number, result) %>%
   count(result)
 
 # Create a dataset of single admission per CHI
@@ -368,9 +382,12 @@ ggplot2::ggplot(covid_admissions) +
 
 rm(cocin_match, coded_as_covid, rapid_cocin_filtered, test_before_stay, test_in_stay, reason_levels)
 
-rapid_date <- file_info(path(here("data"),  "rapid_ecoss_joined.rds")) %>% pull(modification_time) %>% date()
-write_rds(covid_admissions, 
-          path(here("data", str_glue("{rapid_date}_RAPID-cleaned-filtered.rds"))), 
-          compress = "gz")
+rapid_date <- file_info(path(here("data"), "rapid_ecoss_joined.rds")) %>%
+  pull(modification_time) %>%
+  date()
+write_rds(covid_admissions,
+  path(here("data", str_glue("{rapid_date}_RAPID-cleaned-filtered.rds"))),
+  compress = "gz"
+)
 
 rm(rapid_date, covid_admissions)

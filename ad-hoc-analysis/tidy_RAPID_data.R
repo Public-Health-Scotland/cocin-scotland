@@ -2,10 +2,14 @@ source("extract-data/00_setup-environment.R")
 
 # Read COCIN data
 cocin_with_chi <- read_rds(path(server_dir, str_glue("{date}_cocin-clean-data.rds", date = latest_server_data("cocin")))) %>%
-  select(subjid, chi_number = nhs_chi, cocin_adm = hostdat, cocin_dis = dsstdtc) %>%
-  mutate_at(vars(cocin_adm, cocin_dis), ~ as_date(.)) %>%
+  select(subjid, nhs_chi, hostdat, dsstdtc) %>%
+  mutate_at(vars(hostdat, dsstdtc), as_date) %>%
   group_by(subjid) %>%
-  summarise_all(coalesce) %>%
+  mutate(chi_number = first(na.omit(nhs_chi)),
+         cocin_adm = first(na.omit(hostdat)),
+         cocin_dis = first(na.omit(dsstdtc))
+  ) %>%
+  summarise_at(vars(chi_number, cocin_adm, cocin_dis), first) %>% 
   filter(!is.na(chi_number), !is.na(cocin_adm))
 
 

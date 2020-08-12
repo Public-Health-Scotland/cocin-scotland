@@ -25,8 +25,8 @@ fix_age_sex_from_chi <- function(data) {
     dplyr::select(subjid, nhs_chi, agedat, age, sex, hostdat, daily_dsstdat, cestdat, dsstdat) %>%
     dplyr::mutate_at(vars(hostdat, daily_dsstdat, cestdat, dsstdat), ~ as_date(.)) %>% 
     dplyr::group_by(subjid) %>%
-    dplyr::summarise_all(~ dplyr::first(na.omit(.))) %>%
     dplyr::filter(phsmethods::chi_pad(nhs_chi) %>% phsmethods::chi_check() == "Valid CHI")
+    dplyr::summarise_all(~ dplyr::coalesce(.)) %>%
 
   missing_age <- valid_chis %>% dplyr::filter(is.na(age))
   missing_sex <- valid_chis %>% dplyr::filter(is.na(sex))

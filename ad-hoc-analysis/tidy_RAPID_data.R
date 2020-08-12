@@ -209,7 +209,8 @@ coded_as_covid <- coded_as_covid %>%
   mutate(
     derived_los = time_length(adm_date %--% dis_date, "days"),
     los = if_else(los > derived_los, derived_los, los),
-    los = if_else(los == derived_los, NA_integer_, los)
+    los = if_else(los == derived_los, NA_real_, los),
+    los = as.integer(los)
   ) %>%
   select(-derived_los) %>%
   group_by(chi_number) %>%

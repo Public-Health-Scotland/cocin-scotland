@@ -284,6 +284,7 @@ rapid_cocin_filtered %>%
   anti_join(test_in_stay, by = "chi_number") %>%
   # anti_join(other_coronavirus, by = "chi_number") %>%
   anti_join(test_before_stay, by = "chi_number") %>%
+  distinct(chi_number, result) %>% 
   count(result)
 
 # Create a dataset of single admission per CHI
@@ -324,7 +325,10 @@ reason_levels <- covid_admissions %>%
 ggplot2::ggplot(covid_admissions) +
   geom_histogram(aes(adm_date, fill = factor(reason, reason_levels)), binwidth = 7) +
   theme_minimal() +
-  scale_fill_brewer("Reason", type = "qual", palette = "Set3")
+  scale_fill_brewer("Reason", type = "qual", palette = "Set3") +
+  theme(legend.position = "top") +
+  xlab("Admission week") +
+  ylab("Number of admissions")
 
 
 # Not sure if this is needed

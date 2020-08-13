@@ -5,12 +5,11 @@ icu <- read_rds(path(here("data", str_glue("SICSAG_extract.rds"))))
 
 # Prepare data for matching - create ICU 'stays'
 icu <- icu %>%
-  select(ChiNo, AdmitUnit, DiscDate) %>%
+  select(ChiNo, AdmitUnit, DiscDate, covidICUorHDU) %>%
   rename(chi_number = ChiNo) %>%
-  mutate(AdmitUnit = as.Date(AdmitUnit, format="%m/%d/%Y"),
-         DiscDate  = as.Date(DiscDate, format="%m/%d/%Y")) %>%
+  mutate(AdmitUnit = as.Date(AdmitUnit, format="%d-%B-%Y"),
+         DiscDate  = as.Date(DiscDate, format="%d-%B-%Y")) %>%
   arrange(chi_number, AdmitUnit, DiscDate) %>%
-  
   group_by(chi_number) %>%
   # If ICU admission date is the same (or within 1 day) of the previous admission,
   # count as in same stay
@@ -31,7 +30,8 @@ for(i in 1:10){
 icu <- icu %>%
   group_by(chi_number, stay_marker) %>%
   summarise(AdmitUnit = min(AdmitUnit),
-            DiscDate  = max(DiscDate))
+            DiscDate  = max(DiscDate),
+            covidICUorHDU = first(na.omit(covidICUorHDU)))
 
 
 # Get CHIs in data with ICU data
@@ -44,7 +44,8 @@ icu_data <- rapid_data %>%
   # Calc LOS 
   mutate(los_icu = icudisdate - icuadmitdate) %>%
   # Select only variables required
-  select(chi_number, adm_date, dis_date, icuadmitdate, icudisdate, los_icu) %>%
+  select(chi_number, adm_date, dis_date, icuadmitdate, icudisdate, los_icu, 
+         covidICUorHDU) %>%
   # Ensure ICU admission date is within the hospital admission dates
   mutate(interval_marker_adm = ifelse(!icuadmitdate %within% 
                                         (adm_date %--% dis_date), 1, 0)) %>%
@@ -57,7 +58,8 @@ icu_data <- rapid_data %>%
   summarise(icuadmitdate = min(icuadmitdate),
             icudisdate   = max(icudisdate),
             los_icu = sum(los_icu),
-            icu = "Yes")
+            icu = "Yes",
+            covidICUorHDU = first(na.omit(covidICUorHDU)))
 
 # Add in ICU data
 rapid_icu <- rapid_data %>%
@@ -65,6 +67,6 @@ rapid_icu <- rapid_data %>%
   left_join(icu_data, by = c("chi_number","adm_date")) %>%
   # NAs coded as No
   mutate(icu = ifelse(is.na(icu), 'No', icu)) %>%
-  select(chi_number, adm_date, icu, icuadmitdate, icudisdate, los_icu)
+  select(chi_number, adm_date, icu, icuadmitdate, icudisdate, los_icu, covidICUorHDU)
 
 rm(icu, icu_data)

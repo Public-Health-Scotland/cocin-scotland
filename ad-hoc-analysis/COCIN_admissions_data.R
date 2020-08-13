@@ -185,8 +185,6 @@ underlyingcc <- cocin %>%
 ############# RISK FACTORS - MEDICATIONS ################
 #########################################################
 
-table(cocin$conv_plasma_cmyn, exclude = NULL)
-
 rkhospmedc <- cocin %>%
   group_by(subjid) %>%
   summarise(

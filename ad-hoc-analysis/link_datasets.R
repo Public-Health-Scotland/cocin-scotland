@@ -37,12 +37,17 @@ write_rds(data, path(here("data", str_glue("Linked_Dataset.rds"))),
           compress = "gz")
 
 # remove datasets not required
-rm(rapid_data, rapid_cocin, rapid_deaths, rapid_icu, rapid_prevhosp, rapid_nrs)
-
+rm(rapid_data, rapid_cocin, rapid_deaths, rapid_icu, rapid_prevhosp)
 
 ### IMOVE Recode
 source("ad-hoc-analysis/IMOVE_Recode.R")
 
 # write dataset
 write_rds(IMOVE_data, path(here("data", str_glue("IMOVE_data.rds"))), 
+          compress = "gz")
+
+### Genomics Recode
+source("ad-hoc-analysis/Genomics_Recode.R")
+
+write_rds(genomics_hospdata, path(here("data", str_glue("Genomics_hospdata.rds"))), 
           compress = "gz")

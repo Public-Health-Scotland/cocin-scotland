@@ -17,14 +17,15 @@ demographics <- data %>%
     # consent - this is NA
     consent = NA,
     # sex - take from RAPID  
-    sex = ifelse(sex == "F", 0,
-                 ifelse(sex == "M", 1, 
-                        ifelse(sex == "U", 3, 8))),
+    sex = ifelse(sex == "Female", 0,
+                 ifelse(sex == "Male", 1, 
+                        ifelse(sex == "Unknown", 3, 8))),
+    sex = ifelse(is.na(sex), 8, sex),
     # age_y - age in years
-    age_y = age,
+    age_y = as.integer(ifelse(age > 1, age, NA)),
     # age_m - age in months for those under two, can calculate from RAPID DOB
-    age_m = ifelse(age < 2, 
-                   interval(patient_dob, adm_date) %/% months(1), NA),
+    age_m = as.integer(ifelse(age < 2, 
+                   interval(dob, adm_date) %/% months(1), NA)),
     # height - N/A
     height = NA,
     # weight - N/A
@@ -32,7 +33,9 @@ demographics <- data %>%
   ) %>%
   
   # select only required variables for this section
-  select(chi_number, adm_date, idcountry, hosp_id2, age_y, age_m,  sex, height, weight)
+  select(chi_number, adm_date, idcountry, hosp_id2, age_y, age_m,  sex, height, weight)%>%
+  
+  mutate_at(vars(sex), .funs = factor)
 
 #################################
 ###### Hospital Information #####
@@ -65,15 +68,16 @@ hospinfo <- data %>%
     # icudisdate - from SICSAG
     icudisdate = icudisdate,
     # los_hosp
-    los_hosp = dischargedate - admitdate,
+    los_hosp = as.integer(dischargedate - admitdate),
     # los_icu - from SICSAG
-    los_icu = los_icu,
+    los_icu = as.integer(los_icu),
     # multiple_hosp
     multiple_hosp = ifelse(no_of_readmissions >= 1, 1, 0),
     multiple_hosp = ifelse(is.na(multiple_hosp), 0, multiple_hosp),
     # multiple_episode
     multiple_episode = no_of_readmissions,
     multiple_episode = ifelse(is.na(multiple_episode), 0, multiple_episode),
+    multiple_episode = as.integer(multiple_episode),
     # prevhosp  
     prevhosp = ifelse(prevhosp == 'No', 0,
                       ifelse(prevhosp == 'Yes', 1, 8))
@@ -82,7 +86,9 @@ hospinfo <- data %>%
   # select only required variables for this section
   select(chi_number, adm_date, admitdate, dischargedate, hospitalward, hospitalward_oth,
          icu, icuadmitdate, icudisdate, los_hosp, los_icu, multiple_hosp, 
-         multiple_episode, prevhosp)
+         multiple_episode, prevhosp) %>%
+  
+  mutate_at(vars(hospitalward, icu, multiple_hosp, prevhosp), .funs = factor)
 
 
 ###############################
@@ -115,7 +121,7 @@ patientinfo <- data %>%
                         ifelse(postpartum == "Yes", 1, 8)),
     postpartum = ifelse(is.na(postpartum), 8, postpartum),
     # postcode
-    postcode  = patient_postcode,
+    postcode  = postcode,
     # residence - This is given as it is in RAPID data, needs recoded
     residence = admitted_transfer_from_type,
     # onsetdate
@@ -126,7 +132,9 @@ patientinfo <- data %>%
   
   # select only required variables for this section
   select(chi_number, adm_date, hcw, smoking, pregnant,
-         trimester, postpartum, postcode, residence, onsetdate, swabdate)
+         trimester, postpartum, postcode, residence, onsetdate, swabdate)%>%
+  
+  mutate_at(vars(-chi_number, -adm_date, -postcode, -onsetdate, -swabdate), .funs = factor)
 
 ####################################
 ##### CASE SEVERITY (SYMPTOMS) #####
@@ -145,7 +153,7 @@ symptoms <- data %>%
          # malaise - only COCIN admissions
          malaise      = ifelse(malaise == "NO", 0,
                                ifelse(malaise == "YES", 1, 8)),
-         malaise        = ifelse(is.na(malaise), 8, malaise),
+         malaise      = ifelse(is.na(malaise), 8, malaise),
          
          # headache - only COCIN admissions
          headache     = ifelse(headache == "NO", 0,
@@ -247,8 +255,9 @@ symptoms <- data %>%
   select(chi_number, adm_date, abdopain, ageusia, anosmia, chest, chills, confusion, 
          conjunct, coryza, cough, dermato, diarr, dizzy, fever, feverishness, general_deter, 
          headache, malaise, myalgia, nausea, palp, sob, sorethroat, suddenonset, 
-         tach, vomit)
-
+         tach, vomit) %>%
+  
+  mutate_at(vars(-chi_number, -adm_date), .funs = factor)
 
 
 ##########################################
@@ -288,13 +297,15 @@ hospitaltests <- data %>%
     ox_nasal = NA,
     
     # oxsat - only COCIN admissions
-    oxsat = oxsat
+    oxsat = as.integer(oxsat)
     
   ) %>%
   
   # select only required variables for this section
   select(chi_number, adm_date, abo, bmi, ct_res, ct_res_sp,  ct_us_ecg, cxr, cxroth_sp, 
-         ecg_qt, examoth_sp, ox_nasal, oxsat)
+         ecg_qt, examoth_sp, ox_nasal, oxsat) %>%
+  
+  mutate_at(vars(abo, ct_res, ct_us_ecg, cxr, ecg_qt, ox_nasal), .funs = factor)
 
 
 ##########################################
@@ -344,7 +355,9 @@ medications <- data %>%
   
   # select only required variables for this section
   select(chi_number, adm_date, nebu, prone, trialdrugs, study_convpl, study_oth, 
-         study_oth_sp, vent, vent_sp, vent_type, venttype_sp)
+         study_oth_sp, vent, vent_sp, vent_type, venttype_sp) %>%
+  
+  mutate_at(vars(-chi_number, -adm_date), .funs = factor)
 
 ##########################################
 ######## CONTACT INFORMATION #############
@@ -364,7 +377,9 @@ contactinfo <- data %>%
          closecont_sp = NA) %>%
   
   # select only required variables for this section
-  select(chi_number, adm_date, closecont, closecont_type, closecont_sp)
+  select(chi_number, adm_date, closecont, closecont_type, closecont_sp) %>%
+  
+  mutate_at(vars(-chi_number, -adm_date), .funs = factor)
 
 
 ##########################################
@@ -453,7 +468,9 @@ conditions <- data %>%
   # select only required variables for this section
   select(chi_number, adm_date, anaemia, asplenia, asthma, cancer, dement, diabetes,
          heartdis,  hypert, immuno, liverdis, lungdis, neuromusc, obese,
-         rendis, rheumat, stroke, tuberc)
+         rendis, rheumat, stroke, tuberc) %>%
+  
+  mutate_at(vars(-chi_number, -adm_date), .funs = factor)
 
 
 
@@ -466,15 +483,18 @@ outcomes <- data %>%
   # outcome
   mutate(
     
-    outcome_pre = ifelse(discharge_type %in% c(40,41,42,43), 1,
-                         ifelse(discharge_type %in% c(10,11,18,19,20,21,22,23,28,29), 2,
-                                ifelse(discharge_type %in% c(12,13), 3, 8))),
-    outcome_pre = ifelse(is.na(outcome_pre), 8, outcome_pre),
+    # outcome_pre = ifelse(discharge_type %in% c(40,41,42,43), 1,
+    #                      ifelse(discharge_type %in% c(10,11,18,19,20,21,22,23,28,29), 2,
+    #                             ifelse(discharge_type %in% c(12,13), 3, 8))),
+    # outcome_pre = ifelse(is.na(outcome_pre), 8, outcome_pre),
     
     death_outcome = ifelse(!is.na(date_of_death) & date_of_death <= dis_date, 1, 0),
     
-    outcome = ifelse(outcome_pre == 1 | death_outcome == 1, 1, outcome_pre),
-    outcome = ifelse(is.na(outcome), 8, outcome), 
+    # outcome = ifelse(outcome_pre == 1 | death_outcome == 1, 1, outcome_pre),
+    # outcome = ifelse(is.na(outcome), 8, outcome), 
+    
+    outcome = ifelse(death_outcome == 1, 1, 2),
+    outcome  = ifelse(is.na(outcome), 8, outcome), 
     
     deathdate = ifelse(outcome == '1', as.character(date_of_death), NA),
     deathdate = as.Date(deathdate),
@@ -487,8 +507,9 @@ outcomes <- data %>%
   ) %>%
   
   # select only required variables for this section
-  select(chi_number, adm_date, outcome, deathcause, deathdate, healthcare_contact, 
-         dis_date, date_of_death)
+  select(chi_number, adm_date, outcome, deathcause, deathdate, healthcare_contact) %>%
+  
+  mutate_at(vars(-chi_number, -adm_date, -deathdate), .funs = factor)
 
 
 ####################################
@@ -531,7 +552,9 @@ labtests <- data %>%
   
   # select only required variables for this section
   select(chi_number, adm_date, lab_covid, lab_covtest, lab_covtesttype, lab_covtesttype_sp, 
-         covid, genetic_group, seq)
+         covid, genetic_group, seq) %>%
+  
+  mutate_at(vars(-chi_number, -adm_date), .funs = factor)
 
 
 ##########################################

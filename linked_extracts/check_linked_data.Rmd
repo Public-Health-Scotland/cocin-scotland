@@ -12,7 +12,9 @@ knitr::opts_chunk$set(echo = FALSE)
 library(gt)
 library(scales)
 
-imove_clean <- read_rds(path(server_dir, "..", "final_data", "IMOVE_data.rds")) %>%
+latest_data <- dir_info(path(server_dir, "..", "final_data")) %>% filter(birth_time == max(birth_time, na.rm = TRUE)) %>% pull(path)
+
+imove_clean <- read_rds(latest_data) %>%
   as_tibble() %>%
   mutate(across(
     c(

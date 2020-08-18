@@ -51,6 +51,13 @@ if (!require(writexl)) {
 }
 if (!require(scales)) {
   install.packages("scales")
+if (!require(remotes)) {
+  install.packages("remotes")
+  library(remotes)
+}
+if (!require(phsmethods)) {
+  remotes::install_github("Health-SocialCare-Scotland/phsmethods")
+  library(phsmethods)
 }
 
 

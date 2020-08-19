@@ -478,6 +478,14 @@ conditions <- data %>%
 ######## OUTCOMES AND DEATH ########
 ####################################
 
+table(data$date_of_death, exclude = NULL)
+
+test <- outcomes %>%
+  filter(!is.na(deathdate)) %>%
+  mutate(diff = as.Date(deathdate) - as.Date(dis_date))
+
+table(test$diff)
+
 outcomes <- data %>%
   
   # outcome
@@ -488,7 +496,7 @@ outcomes <- data %>%
     #                             ifelse(discharge_type %in% c(12,13), 3, 8))),
     # outcome_pre = ifelse(is.na(outcome_pre), 8, outcome_pre),
     
-    death_outcome = ifelse(!is.na(date_of_death) & date_of_death <= dis_date, 1, 0),
+    death_outcome = ifelse(!is.na(date_of_death) & date_of_death <= (dis_date + 1), 1, 0),
     
     # outcome = ifelse(outcome_pre == 1 | death_outcome == 1, 1, outcome_pre),
     # outcome = ifelse(is.na(outcome), 8, outcome), 
@@ -507,7 +515,8 @@ outcomes <- data %>%
   ) %>%
   
   # select only required variables for this section
-  select(chi_number, adm_date, outcome, deathcause, deathdate, healthcare_contact) %>%
+  select(chi_number, adm_date, outcome, deathcause, deathdate, healthcare_contact,
+         date_of_death, dis_date) %>%
   
   mutate_at(vars(-chi_number, -adm_date, -deathdate), .funs = factor)
 

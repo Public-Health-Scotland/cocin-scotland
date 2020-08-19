@@ -41,7 +41,40 @@ rapid <- read_rds(here("data", "rapid_ecoss_joined.rds")) %>%
     surname,
     specimen_date,
     result
-  )
+  ) %>%
+  # Do some simple validation on the postcode and make it NA if it's invalid
+  mutate(patient_postcode = if_else(str_detect(
+    patient_postcode,
+    regex("^[a-z]{1,2}\\d[a-z\\d]?\\s*\\d[a-z]{2}$",
+      ignore_case = TRUE
+    )
+  ), patient_postcode, NA_character_)) %>%
+  # Make Unknown Ethnicities NA which will mean we ignore them and possibly pick a known one when aggregating
+  mutate(
+    patient_ethnic_group_description =
+      if_else(patient_ethnic_group_description %in% c("Not Known", "Refused/Not Provided by patient"),
+        NA_character_, patient_ethnic_group_description
+      )
+  ) %>%
+  # Drop any invalid CHIs
+  mutate(chi_number = if_else(chi_check(chi_number) == "Valid CHI", chi_number, NA_character_)) %>%
+  # Replace missing gender (should use a phsmethods function for this)
+  mutate(patient_gender_description = case_when(
+    !is.na(patient_gender_description) ~ patient_gender_description,
+    # If the CHI is missing use sex from ECOSS
+    is.na(chi_number) ~ case_when(
+      sex == "F" ~ "Female",
+      sex == "M" ~ "Male",
+      TRUE ~ NA_character_
+    ),
+    # Otherwise use the sex from the CHI
+    parse_integer(str_sub(chi_number, 9, 9)) %% 2 == 0 ~ "Female",
+    TRUE ~ "Male"
+  )) %>%
+  mutate(patient_dob = case_when(
+    !is.na(patient_dob) ~ patient_dob,
+    TRUE ~ dob_from_chi(chi_number)
+  ))
 
 # Aggregate to 'stay' level - this just uses a marker Bob created which tags episodes which are close in time
 # Note we don't group episodes which change hospitals as COCIN CRFs are single hospital

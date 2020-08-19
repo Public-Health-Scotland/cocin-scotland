@@ -8,8 +8,9 @@ sex_from_chi <- function(chi) {
 }
 
 dob_from_chi <- function(chi) {
-  date1 <- lubridate::dmy(stringr::str_replace(chi, "^(\\d{4})(\\d{2})\\d{4}$", "\\119\\2"))
-  date2 <- lubridate::dmy(stringr::str_replace(chi, "^(\\d{4})(\\d{2})\\d{4}$", "\\120\\2"))
+  
+  date1 <- lubridate::dmy(stringr::str_replace(chi, "^(\\d{4})(\\d{2})\\d{4}$", "\\119\\2"), quiet = TRUE)
+  date2 <- lubridate::dmy(stringr::str_replace(chi, "^(\\d{4})(\\d{2})\\d{4}$", "\\120\\2"), quiet = TRUE)
 
   chi_dob <- dplyr::case_when(
     date2 >= lubridate::today() ~ date1,

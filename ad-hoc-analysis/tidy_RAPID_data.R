@@ -84,7 +84,8 @@ rapid <- read_rds(here("data", "rapid_ecoss_joined.rds")) %>%
   mutate(patient_dob = case_when(
     !is.na(patient_dob) ~ patient_dob,
     TRUE ~ dob_from_chi(chi_number)
-  ))
+  )) %>% 
+  select(-sex, -keyemployer)
 
 # Aggregate to 'stay' level - this just uses a marker Bob created which tags episodes which are close in time
 # Note we don't group episodes which change hospitals as COCIN CRFs are single hospital

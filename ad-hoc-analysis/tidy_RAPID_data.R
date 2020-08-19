@@ -117,10 +117,11 @@ rapid_stay_level <- rapid %>%
   ungroup() %>%
   # If we can calculate the age from the RAPID dob and adm_date
   # Otherwise use the age which came from ECOSS
-  mutate(age = if_else(!is.na(time_length(dob %--% adm_date, "years")),
+  mutate(age = if_else(!is.na(dob) & !is.na(adm_date),
     as.integer(floor(time_length(dob %--% adm_date, "years"))),
     age
-  ))
+  )
+  )
 
 
 # Identify the records with multiple admissions so we can choose one

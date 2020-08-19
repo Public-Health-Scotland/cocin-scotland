@@ -406,41 +406,6 @@ ggplot2::ggplot(covid_admissions) +
   ylab("Number of admissions")
 
 
-# Not sure if this is needed
-# Might need reinstating with changes?
-
-# covid_admissions <- covid_admissions %>%
-#   mutate(
-#     age.factor = case_when(
-#       age < 17 ~ "<17",
-#       age < 30 ~ "17-29",
-#       age < 40 ~ "30-39",
-#       age < 50 ~ "40-49",
-#       age < 60 ~ "50-59",
-#       age < 70 ~ "60-69",
-#       age < 80 ~ "70-79",
-#       is.na(age) ~ NA_character_,
-#       TRUE ~ "80+"
-#     ),
-#     age_band = case_when(
-#       age < 18 ~ "Pediatric",
-#       age >= 18 ~ "Adult"
-#     ) %>%
-#       as_factor() %>%
-#       fct_explicit_na(na_level = "Unknown"),
-#     sex = case_when(
-#       sex == "M" ~ "Male",
-#       sex == "F" ~ "Female"
-#     ) %>%
-#       factor(levels = c("Male", "Female", "Not specified")),
-#     admission_iso = isoweek(adm_date),
-#     admission_week = floor_date(adm_date, unit = "week", week_start = 1),
-#     health_board_of_treatment = str_sub(health_board_of_treatment, 5) %>%
-#       str_to_title() %>%
-#       str_replace("&", "and") %>%
-#       str_c("NHS ", .)
-#   )
-
 rm(cocin_match, coded_as_covid, rapid_cocin_filtered, test_before_stay, test_in_stay, reason_levels)
 
 rapid_date <- file_info(path(here("data"), "rapid_ecoss_joined.rds")) %>%

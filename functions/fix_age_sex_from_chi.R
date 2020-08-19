@@ -8,13 +8,21 @@ sex_from_chi <- function(chi) {
 }
 
 dob_from_chi <- function(chi) {
-  
-  date1 <- lubridate::dmy(stringr::str_replace(chi, "^(\\d{4})(\\d{2})\\d{4}$", "\\119\\2"), quiet = TRUE)
-  date2 <- lubridate::dmy(stringr::str_replace(chi, "^(\\d{4})(\\d{2})\\d{4}$", "\\120\\2"), quiet = TRUE)
+  max_age <- 110L
+
+  # Create dates as all DD/MM/19YY
+  date1 <- stringr::str_sub(chi, 1, 6) %>%
+    lubridate::parse_date_time2("dmy", cutoff_2000 = -1L) %>%
+    as_date()
+  # Create dates as all DD/MM/20YY
+  date2 <- stringr::str_sub(chi, 1, 6) %>%
+    lubridate::parse_date_time2("dmy", cutoff_2000 = 100L) %>%
+    as_date()
 
   chi_dob <- dplyr::case_when(
-    date2 >= lubridate::today() ~ date1,
-    lubridate::time_length(date1 %--% lubridate::today(), unit = "years") > 110 ~ date2,
+    date2 >= Sys.Date() ~ date1,
+    # Not as accurate as lubridate::time_length which does leap years correctly but much faster
+    (difftime(Sys.Date(), date1, unit = "days") / 365.25) > max_age ~ date2,
     TRUE ~ NA_Date_
   )
 

@@ -44,10 +44,14 @@ rapid <- read_rds(here("data", "rapid_ecoss_joined.rds")) %>%
     keyemployer
   ) %>%
   # Create a variable for health_care_worker status
-  rapid %>% mutate(keyemployer = str_squish(str_to_lower(keyemployer)),
-                   hcw = case_when(keyemployer == "health care" ~ 1L,
-                                   keyemployer == "citizen" ~ 0L,
-                                   TRUE ~ 8L)) %>% 
+  mutate(
+    keyemployer = str_squish(str_to_lower(keyemployer)),
+    hcw = case_when(
+      keyemployer == "health care" ~ 1L,
+      keyemployer == "citizen" ~ 0L,
+      TRUE ~ 8L
+    )
+  ) %>%
   # Do some simple validation on the postcode and make it NA if it's invalid
   mutate(patient_postcode = if_else(str_detect(
     patient_postcode,

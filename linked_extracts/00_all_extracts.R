@@ -44,7 +44,8 @@ rapid_data_local <- path(here("data", str_glue("{date(latest_extract_date())}_RA
 if (file_exists(rapid_data_local)) {
   file_copy(
     path = rapid_data_local,
-    new_path = path(server_dir, str_glue("{date(latest_extract_date())}_RAPID-cleaned-filtered.rds"))
+    new_path = path(server_dir, str_glue("{date(latest_extract_date())}_RAPID-cleaned-filtered.rds")),
+    overwrite = TRUE
   )
 }
 

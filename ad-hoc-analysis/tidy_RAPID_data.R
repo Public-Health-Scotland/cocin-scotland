@@ -40,8 +40,52 @@ rapid <- read_rds(here("data", "rapid_ecoss_joined.rds")) %>%
     forename,
     surname,
     specimen_date,
-    result
-  )
+    result,
+    keyemployer
+  ) %>%
+  # Create a variable for health_care_worker status
+  mutate(
+    keyemployer = str_squish(str_to_lower(keyemployer)),
+    hcw = case_when(
+      keyemployer == "health care" ~ 1L,
+      keyemployer == "citizen" ~ 0L,
+      TRUE ~ 8L
+    )
+  ) %>%
+  # Do some simple validation on the postcode and make it NA if it's invalid
+  mutate(patient_postcode = if_else(str_detect(
+    patient_postcode,
+    regex("^[a-z]{1,2}\\d[a-z\\d]?\\s*\\d[a-z]{2}$",
+      ignore_case = TRUE
+    )
+  ), patient_postcode, NA_character_)) %>%
+  # Make Unknown Ethnicities NA which will mean we ignore them and possibly pick a known one when aggregating
+  mutate(
+    patient_ethnic_group_description =
+      if_else(patient_ethnic_group_description %in% c("Not Known", "Refused/Not Provided by patient"),
+        NA_character_, patient_ethnic_group_description
+      )
+  ) %>%
+  # Drop any invalid CHIs
+  mutate(chi_number = if_else(chi_check(chi_number) == "Valid CHI", chi_number, NA_character_)) %>%
+  # Replace missing gender (should use a phsmethods function for this)
+  mutate(patient_gender_description = case_when(
+    !is.na(patient_gender_description) ~ patient_gender_description,
+    # If the CHI is missing use sex from ECOSS
+    is.na(chi_number) ~ case_when(
+      sex == "F" ~ "Female",
+      sex == "M" ~ "Male",
+      TRUE ~ NA_character_
+    ),
+    # Otherwise use the sex from the CHI
+    parse_integer(str_sub(chi_number, 9, 9)) %% 2 == 0 ~ "Female",
+    TRUE ~ "Male"
+  )) %>%
+  mutate(patient_dob = case_when(
+    !is.na(patient_dob) ~ patient_dob,
+    TRUE ~ dob_from_chi(chi_number)
+  )) %>% 
+  select(-sex, -keyemployer)
 
 # Aggregate to 'stay' level - this just uses a marker Bob created which tags episodes which are close in time
 # Note we don't group episodes which change hospitals as COCIN CRFs are single hospital
@@ -53,6 +97,7 @@ rapid_stay_level <- rapid %>%
     postcode = first(na.omit(patient_postcode)),
     sex = first(na.omit(patient_gender_description)),
     ethnicity = first(na.omit(patient_ethnic_group_description)),
+    hcw = first(hcw),
     rapid_id = first(rapid_id),
     adm_date = min(admission_date),
     dis_date = max(discharge_date),
@@ -72,10 +117,11 @@ rapid_stay_level <- rapid %>%
   ungroup() %>%
   # If we can calculate the age from the RAPID dob and adm_date
   # Otherwise use the age which came from ECOSS
-  mutate(age = if_else(!is.na(time_length(dob %--% adm_date, "years")),
+  mutate(age = if_else(!is.na(dob) & !is.na(adm_date),
     as.integer(floor(time_length(dob %--% adm_date, "years"))),
     age
-  ))
+  )
+  )
 
 
 # Identify the records with multiple admissions so we can choose one
@@ -112,6 +158,7 @@ cocin_matched <- rapid_stay_level %>%
     postcode = first(na.omit(postcode)),
     sex = first(na.omit(sex)),
     ethnicity = first(na.omit(ethnicity)),
+    hcw = first(hcw),
     rapid_id = first(rapid_id),
     adm_date = min(adm_date),
     dis_date = max(dis_date),
@@ -223,6 +270,7 @@ coded_as_covid <- coded_as_covid %>%
     postcode = first(na.omit(postcode)),
     sex = first(na.omit(sex)),
     ethnicity = first(na.omit(ethnicity)),
+    hcw = first(hcw),
     rapid_id = first(rapid_id),
     adm_date = min(adm_date),
     dis_date = max(dis_date),
@@ -363,41 +411,6 @@ ggplot2::ggplot(covid_admissions) +
   xlab("Admission week") +
   ylab("Number of admissions")
 
-
-# Not sure if this is needed
-# Might need reinstating with changes?
-
-# covid_admissions <- covid_admissions %>%
-#   mutate(
-#     age.factor = case_when(
-#       age < 17 ~ "<17",
-#       age < 30 ~ "17-29",
-#       age < 40 ~ "30-39",
-#       age < 50 ~ "40-49",
-#       age < 60 ~ "50-59",
-#       age < 70 ~ "60-69",
-#       age < 80 ~ "70-79",
-#       is.na(age) ~ NA_character_,
-#       TRUE ~ "80+"
-#     ),
-#     age_band = case_when(
-#       age < 18 ~ "Pediatric",
-#       age >= 18 ~ "Adult"
-#     ) %>%
-#       as_factor() %>%
-#       fct_explicit_na(na_level = "Unknown"),
-#     sex = case_when(
-#       sex == "M" ~ "Male",
-#       sex == "F" ~ "Female"
-#     ) %>%
-#       factor(levels = c("Male", "Female", "Not specified")),
-#     admission_iso = isoweek(adm_date),
-#     admission_week = floor_date(adm_date, unit = "week", week_start = 1),
-#     health_board_of_treatment = str_sub(health_board_of_treatment, 5) %>%
-#       str_to_title() %>%
-#       str_replace("&", "and") %>%
-#       str_c("NHS ", .)
-#   )
 
 rm(cocin_match, coded_as_covid, rapid_cocin_filtered, test_before_stay, test_in_stay, reason_levels)
 

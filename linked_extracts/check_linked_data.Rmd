@@ -12,93 +12,13 @@ knitr::opts_chunk$set(echo = FALSE)
 library(gt)
 library(scales)
 
-latest_data <- dir_info(path(server_dir, "..", "final_data")) %>% filter(birth_time == max(birth_time, na.rm = TRUE)) %>% pull(path)
+latest_data <- dir_info(path(server_dir, "..", "final_data")) %>% 
+  filter(birth_time == max(birth_time, na.rm = TRUE)) %>% 
+  pull(path)
 
 imove_clean <- read_rds(latest_data) %>%
   as_tibble() %>%
-  mutate(across(
-    c(
-      idcountry,
-      sex,
-      hospitalward,
-      icu,
-      multiple_episode,
-      multiple_hosp,
-      prevhosp,
-      hcw,
-      smoking,
-      pregnant,
-      trimester,
-      postpartum,
-      residence,
-      abdopain,
-      ageusia,
-      anosmia,
-      chest,
-      chills,
-      confusion,
-      conjunct,
-      coryza,
-      cough,
-      dermato,
-      diarr,
-      dizzy,
-      fever,
-      general_deter,
-      headache,
-      malaise,
-      myalgia,
-      nausea,
-      palp,
-      sob,
-      sorethroat,
-      suddenonset,
-      tach,
-      vomit,
-      abo,
-      ct_res,
-      ct_us_ecg,
-      cxr,
-      ecg_qt,
-      ox_nasal,
-      nebu,
-      prone,
-      trialdrugs,
-      study_convpl,
-      study_oth,
-      vent,
-      vent_type,
-      closecont,
-      closecont_type,
-      anaemia,
-      asplenia,
-      asthma,
-      cancer,
-      dement,
-      diabetes,
-      heartdis,
-      hypert,
-      immuno,
-      liverdis,
-      lungdis,
-      neuromusc,
-      obese,
-      rendis,
-      rheumat,
-      stroke,
-      tuberc,
-      outcome,
-      deathcause,
-      healthcare_contact,
-      lab_covid,
-      lab_covtest,
-      lab_covtesttype,
-      seq
-    ),
-    as_factor
-  )) %>%
-  mutate(across(c(age_m, los_hosp, los_icu), as.integer)) %>%
-
+  
   # Add iso weeks and years
   mutate(across(where(is.Date), list(
     week = lubridate::isoweek,
@@ -107,6 +27,9 @@ imove_clean <- read_rds(latest_data) %>%
 
   # Days between symptom and swab
   mutate(swabdelay = time_length(onsetdate %--% swabdate, "days")) %>%
+  
+  # Days between swab and admission
+  mutate(nosoc = time_length(swabdate %--% admitdate, "days")) %>%
 
   # Creating a variable for presence of any chronic disease
   mutate(anychron = grepl(1, paste(liverdis, diabetes, heartdis, cancer, immuno, lungdis, rendis, dement, stroke, rheumat, anaemia, tuberc, asplenia, asthma, hypert, neuromusc, obese), fixed = TRUE)) %>%
@@ -372,9 +295,34 @@ ggplot(imove_clean, aes(x = age_y, fill = sex)) +
 **`r imove_clean %>% filter(!is.na(dischargedate), outcome == 3) %>% nrow()`** rows have a discharge-date but are flagged as still hospitalised.
 
 ## GP visits
+We don't have the ***healthcare_contact*** variable
 
-## Time to swab / onset
+## Time to between swab and onset
+```{r swab_delay}
+max_swab_delay <- max(imove_clean$swabdelay, na.rm = TRUE)
+max2_swab_delay <- filter(imove_clean, swabdelay != max_swab_delay) %>% pull(swabdelay) %>%  max()
+```
+The longest time from symtom onset to swab is: `r max_swab_delay` days with onset date:`r imove_clean$onsetdate[which(imove_clean$swabdelay == max_swab_delay)]`, swab date: `r imove_clean$swabdate[which(imove_clean$swabdelay == max_swab_delay)]` and admission date: `r imove_clean$admitdate[which(imove_clean$swabdelay == max_swab_delay)]`
+The second longest time is: `r max2_swab_delay` days with onset date:`r imove_clean$onsetdate[which(imove_clean$swabdelay == max2_swab_delay)]`, swab date: `r imove_clean$swabdate[which(imove_clean$swabdelay == max2_swab_delay)]` and admission date: `r imove_clean$admitdate[which(imove_clean$swabdelay == max2_swab_delay)]`
+
+```{r swab_delay_freq_poly}
+ggplot(imove_clean %>% filter(swabdelay <= max2_swab_delay), aes(swabdelay)) +
+  geom_freqpoly(binwidth = 1) +
+  theme_minimal() +
+  scale_x_continuous(breaks = seq(signif(min(imove_clean$swabdelay, na.rm = TRUE), 1) - 10, signif(max2_swab_delay, 1), by = 10) + 10) +
+  ggtitle("swabdelay = time in days from symptom onset date to swab date")
+```
  
+**`r imove_clean %>% filter(swabdelay < 0) %>% nrow()`** rows have a negative `swabdelay` (swabbed before symptom onset).
+
+**`r imove_clean %>% filter(swabdelay > 21) %>% nrow()`** rows have `swabdelay` greater than 21 days.
+
+## Time to between swab and admission
+
+**`r imove_clean %>% filter(nosoc < 0) %>% nrow()`** rows have a negative `nosoc` (admitted before swab date.
+
+
+
 ## Other dates
 
 ### Admissions before 15 March

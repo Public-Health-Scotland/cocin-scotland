@@ -1,6 +1,6 @@
 sex_from_chi <- function(chi) {
   chi_sex <- dplyr::if_else((stringr::str_sub(chi, 9, 9) %>%
-    as.integer() %>%
+    readr::parse_integer() %>%
     mod(2)) == 0, "Female", "Male") %>%
     factor(levels = c("Male", "Female", "Not specified"))
 

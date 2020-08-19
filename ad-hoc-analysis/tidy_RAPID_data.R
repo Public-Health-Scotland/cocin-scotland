@@ -40,8 +40,14 @@ rapid <- read_rds(here("data", "rapid_ecoss_joined.rds")) %>%
     forename,
     surname,
     specimen_date,
-    result
+    result,
+    keyemployer
   ) %>%
+  # Create a variable for health_care_worker status
+  rapid %>% mutate(keyemployer = str_squish(str_to_lower(keyemployer)),
+                   hcw = case_when(keyemployer == "health care" ~ 1L,
+                                   keyemployer == "citizen" ~ 0L,
+                                   TRUE ~ 8L)) %>% 
   # Do some simple validation on the postcode and make it NA if it's invalid
   mutate(patient_postcode = if_else(str_detect(
     patient_postcode,
@@ -86,6 +92,7 @@ rapid_stay_level <- rapid %>%
     postcode = first(na.omit(patient_postcode)),
     sex = first(na.omit(patient_gender_description)),
     ethnicity = first(na.omit(patient_ethnic_group_description)),
+    hcw = first(hcw),
     rapid_id = first(rapid_id),
     adm_date = min(admission_date),
     dis_date = max(discharge_date),
@@ -145,6 +152,7 @@ cocin_matched <- rapid_stay_level %>%
     postcode = first(na.omit(postcode)),
     sex = first(na.omit(sex)),
     ethnicity = first(na.omit(ethnicity)),
+    hcw = first(hcw),
     rapid_id = first(rapid_id),
     adm_date = min(adm_date),
     dis_date = max(dis_date),
@@ -256,6 +264,7 @@ coded_as_covid <- coded_as_covid %>%
     postcode = first(na.omit(postcode)),
     sex = first(na.omit(sex)),
     ethnicity = first(na.omit(ethnicity)),
+    hcw = first(hcw),
     rapid_id = first(rapid_id),
     adm_date = min(adm_date),
     dis_date = max(dis_date),

@@ -7,6 +7,7 @@ icu <- read_rds(path(here("data", str_glue("SICSAG_extract.rds"))))
 icu <- icu %>%
   select(ChiNo, AdmitUnit, DiscDate, covidICUorHDU) %>%
   rename(chi_number = ChiNo) %>%
+  mutate(chi_number = as.character(chi_number)) %>%
   mutate(AdmitUnit = as.Date(AdmitUnit, format="%d-%B-%Y"),
          DiscDate  = as.Date(DiscDate, format="%d-%B-%Y")) %>%
   arrange(chi_number, AdmitUnit, DiscDate) %>%
@@ -32,7 +33,6 @@ icu <- icu %>%
   summarise(AdmitUnit = min(AdmitUnit),
             DiscDate  = max(DiscDate),
             covidICUorHDU = first(na.omit(covidICUorHDU)))
-
 
 # Get CHIs in data with ICU data
 icu_data <- rapid_data %>%

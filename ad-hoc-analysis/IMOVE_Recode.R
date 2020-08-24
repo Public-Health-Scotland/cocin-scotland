@@ -124,8 +124,8 @@ patientinfo <- data %>%
     postcode  = postcode,
     # residence - This is given as it is in RAPID data, needs recoded
     residence = admitted_transfer_from_type,
-    # onsetdate
-    onsetdate = onsetdate, 
+    # onsetdate - Fix wrong date issue
+    onsetdate = ifelse(onsetdate == as.Date('2010-03-26'), as.Date('2020-03-26'), as.Date(onsetdate)),
     # swabdate - from RAPID
     swabdate = test_date
   ) %>%
@@ -135,7 +135,7 @@ patientinfo <- data %>%
          trimester, postpartum, postcode, residence, onsetdate, swabdate)%>%
   
   mutate_at(vars(-chi_number, -adm_date, -postcode, -onsetdate, -swabdate), .funs = factor)
-
+  
 ####################################
 ##### CASE SEVERITY (SYMPTOMS) #####
 ####################################
@@ -477,14 +477,6 @@ conditions <- data %>%
 ####################################
 ######## OUTCOMES AND DEATH ########
 ####################################
-
-table(data$date_of_death, exclude = NULL)
-
-test <- outcomes %>%
-  filter(!is.na(deathdate)) %>%
-  mutate(diff = as.Date(deathdate) - as.Date(dis_date))
-
-table(test$diff)
 
 outcomes <- data %>%
   

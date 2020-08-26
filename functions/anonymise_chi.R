@@ -15,13 +15,13 @@ anonymise_chi <- function(data, chi, lookup_file, drop = TRUE) {
   readr::write_rds(dplyr::bind_rows(readr::read_rds(lookup_file),
                                     data) %>% 
                      # Remove any duplicates
-                     distinct({{chi}}, anon_id),
+                     dplyr::distinct({{chi}}, anon_id),
                    lookup_file,
                    compress = "gz")
   
   # Drop the chi variable as standard behaviour
   if (drop) {
-    data <- select(data, -{{chi}})
+    data <- dplyr::select(data, -{{chi}})
   }
   
   return(data)

@@ -1,5 +1,4 @@
 source("extract-data/00_setup-environment.R")
-detach("package:tidylog", unload = TRUE)
 
 # Export COCIN data
 # Note you will need an API key (a pop-up will ask for it)

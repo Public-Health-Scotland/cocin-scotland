@@ -151,6 +151,7 @@ cocin_matched <- rapid_stay_level %>%
   )) %>%
   # Limit to records we're about to merge and the single admissions which have been selected already
   filter(join_records == 0 | select_adm) %>%
+  mutate(los = time_length(adm_date %--% dis_date, "days")) %>% 
   group_by(chi_number, join_records) %>%
   summarise(
     dob = first(na.omit(dob)),
@@ -173,10 +174,18 @@ cocin_matched <- rapid_stay_level %>%
     ecossid = first(ecossid),
     test_date = first(test_date),
     forename = first(forename),
-    surname = first(surname)
+    surname = first(surname),
+    los = sum(los)
   ) %>%
   ungroup() %>%
-  select(-join_records) %>%
+    # Clean up any los where this is longer than possible (caused by overlapping dates)
+    # The remove any los for episodes where the dates match the los
+    mutate(
+      derived_los = time_length(adm_date %--% dis_date, "days"),
+      los = if_else(los >= derived_los, NA_real_, los),
+      los = as.integer(los)
+    ) %>%
+  select(-join_records, -derived_los) %>%
   mutate(cocin_admission = TRUE)
 
 rapid_cocin_filtered <- rapid_stay_level %>%
@@ -293,8 +302,7 @@ coded_as_covid <- coded_as_covid %>%
   # The remove any los for episodes where the dates match the los
   mutate(
     derived_los = time_length(adm_date %--% dis_date, "days"),
-    los = if_else(los > derived_los, derived_los, los),
-    los = if_else(los == derived_los, NA_real_, los),
+    los = if_else(los >= derived_los, NA_real_, los),
     los = as.integer(los)
   ) %>%
   select(-derived_los) %>%
@@ -329,11 +337,44 @@ test_in_stay <- rapid_cocin_filtered %>%
   # Keep admissions where the test was within the dates
   filter((adm_date <= test_date & dis_date >= test_date) |
     (is.na(dis_date) & (test_date >= adm_date))) %>%
+  mutate(los = time_length(adm_date %--% dis_date, "days")) %>% 
   # If we have multiple admissions which overlap the test date merge them
   group_by(chi_number, temporal_link_id) %>%
   # Use last as then we are more likely to avoid an initial transfer hospital
-  summarise_all(~ last(na.omit(.))) %>%
-  ungroup() %>%
+  summarise(
+    dob = first(na.omit(dob)),
+    age = first(age),
+    postcode = first(na.omit(postcode)),
+    sex = first(na.omit(sex)),
+    ethnicity = first(na.omit(ethnicity)),
+    hcw = first(hcw),
+    rapid_id = first(rapid_id),
+    adm_date = min(adm_date),
+    dis_date = max(dis_date),
+    hospital_of_treatment_code = last(hospital_of_treatment_code),
+    covid = last(covid),
+    diag_1 = first(na.omit(diag_1)),
+    diag_2 = first(na.omit(diag_2)),
+    diag_3 = first(na.omit(diag_3)),
+    diag_4 = first(na.omit(diag_4)),
+    diag_5 = first(na.omit(diag_5)),
+    diag_6 = first(na.omit(diag_6)),
+    result = first(result), # Result is the result of the PCR test from ECOSS
+    ecossid = first(ecossid),
+    test_date = first(test_date),
+    forename = first(forename),
+    surname = first(surname),
+    los = sum(los)
+  ) %>%
+  ungroup() %>% 
+  # Clean up any los where this is longer than possible (caused by overlapping dates)
+  # The remove any los for episodes where the dates match the los
+  mutate(
+    derived_los = time_length(adm_date %--% dis_date, "days"),
+    los = if_else(los >= derived_los, NA_real_, los),
+    los = as.integer(los)
+  ) %>%
+  select(-derived_los) %>%
   # Arrange to keep the earliest admission if we still have multiple
   arrange(desc(adm_date)) %>%
   distinct(chi_number, .keep_all = TRUE) %>%
@@ -348,11 +389,44 @@ test_before_stay <- rapid_cocin_filtered %>%
   # anti_join(other_coronavirus, by = "chi_number") %>%
   filter(result == 1) %>%
   filter(test_date %within% ((adm_date - days(21)) %--% adm_date)) %>%
+  mutate(los = time_length(adm_date %--% dis_date, "days")) %>% 
   # If we have multiple admissions which overlap the test date merge them
   group_by(chi_number, temporal_link_id) %>%
   # Use last as then we are more likely to avoid an initial transfer hospital
-  summarise_all(~ last(na.omit(.))) %>%
-  ungroup() %>%
+  summarise(
+    dob = first(na.omit(dob)),
+    age = first(age),
+    postcode = first(na.omit(postcode)),
+    sex = first(na.omit(sex)),
+    ethnicity = first(na.omit(ethnicity)),
+    hcw = first(hcw),
+    rapid_id = first(rapid_id),
+    adm_date = min(adm_date),
+    dis_date = max(dis_date),
+    hospital_of_treatment_code = last(hospital_of_treatment_code),
+    covid = last(covid),
+    diag_1 = first(na.omit(diag_1)),
+    diag_2 = first(na.omit(diag_2)),
+    diag_3 = first(na.omit(diag_3)),
+    diag_4 = first(na.omit(diag_4)),
+    diag_5 = first(na.omit(diag_5)),
+    diag_6 = first(na.omit(diag_6)),
+    result = first(result), # Result is the result of the PCR test from ECOSS
+    ecossid = first(ecossid),
+    test_date = first(test_date),
+    forename = first(forename),
+    surname = first(surname),
+    los = sum(los)
+  ) %>%
+  ungroup() %>% 
+  # Clean up any los where this is longer than possible (caused by overlapping dates)
+  # The remove any los for episodes where the dates match the los
+  mutate(
+    derived_los = time_length(adm_date %--% dis_date, "days"),
+    los = if_else(los >= derived_los, NA_real_, los),
+    los = as.integer(los)
+  ) %>%
+  select(-derived_los) %>%
   arrange(chi_number, adm_date) %>%
   distinct(chi_number, .keep_all = TRUE) %>%
   mutate(reason = "Test <= 21 days before stay")
@@ -396,6 +470,21 @@ map(list(covid_admissions, cocin_match, coded_as_covid, test_before_stay, test_i
 # Look at the reasons for each admission
 covid_admissions %>% count(reason)
 
+covid_admissions %>% 
+  select(reason, covid, result) %>% 
+  mutate(reason_2 = case_when(reason == "COCIN matched" ~ reason,
+                              covid == "Lab comfirmed" ~ "RAPID diag U071 (Lab comfirmed)",
+                              covid == "Clinically suspected" ~ "RAPID diag U072 (Clinically suspected)",
+                              reason == "Test <= 21 days before stay" ~ "Tested in community",
+                              reason == "Test during stay" ~ reason)) %>% 
+  group_by(reason_2) %>% 
+  summarise("ECOSS +ve" = sum(result == 1, na.rm = TRUE),
+            "ECOSS -ve" = sum(result == 0, na.rm = TRUE),
+            "ECOSS missing" = sum(is.na(result)),
+            Totals = n()) %>% 
+  bind_rows(mutate(., reason_2 = "Totals") %>% 
+              group_by(reason_2) %>% summarise(across(everything(), sum))) 
+
 reason_levels <- covid_admissions %>%
   count(reason) %>%
   arrange(n) %>%
@@ -410,6 +499,15 @@ ggplot2::ggplot(covid_admissions) +
   theme(legend.position = "top") +
   xlab("Admission week") +
   ylab("Number of admissions")
+
+ggplot2::ggplot(covid_admissions) +
+  geom_histogram(aes(adm_date, fill = factor(reason, reason_levels)), binwidth = 7) +
+  theme_minimal() +
+  scale_fill_brewer("Reason", type = "qual", palette = "Set3") +
+  theme(legend.position = "top") +
+  xlab("Admission week") +
+  ylab("Number of admissions") +
+  facet_wrap("reason")
 
 
 rm(cocin_match, coded_as_covid, rapid_cocin_filtered, test_before_stay, test_in_stay, reason_levels)

@@ -16,6 +16,8 @@ latest_data <- dir_info(path(server_dir, "..", "final_data")) %>%
   filter(birth_time == max(birth_time, na.rm = TRUE)) %>% 
   pull(path)
 
+message(str_glue("Using file {basename(latest_data)}"))
+
 imove_clean <- read_rds(latest_data) %>%
   as_tibble() %>%
   

@@ -146,7 +146,7 @@ pregnant_male <- imove_clean %>%
     sex == 1,
     pregnant == 1 | trimester != 8 | postpartum == 1
   ) %>%
-  select(hosp_id2, pregnant, trimester, postpartum)
+  select(anon_id, pregnant, trimester, postpartum)
 
 pregnant_male
 ```
@@ -164,7 +164,7 @@ pregnant_female <- imove_clean %>%
     pregnant == 1,
     age_y < 15 | age_y > 50
   ) %>%
-  select(hosp_id2, age_y, pregnant, trimester, postpartum) %>%
+  select(anon_id, age_y, pregnant, trimester, postpartum) %>%
   arrange(age_y)
 
 pregnant_female

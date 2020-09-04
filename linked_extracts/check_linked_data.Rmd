@@ -30,8 +30,8 @@ imove_clean <- read_rds(latest_data) %>%
   # Days between symptom and swab
   mutate(swabdelay = time_length(onsetdate %--% swabdate, "days")) %>%
   
-  # Days between swab and admission
-  mutate(nosoc = time_length(swabdate %--% admitdate, "days")) %>%
+  # Days between symptom onset and admission
+  mutate(nosoc = time_length(onsetdate %--% admitdate, "days")) %>%
 
   # Creating a variable for presence of any chronic disease
   mutate(anychron = grepl(1, paste(liverdis, diabetes, heartdis, cancer, immuno, lungdis, rendis, dement, stroke, rheumat, anaemia, tuberc, asplenia, asthma, hypert, neuromusc, obese), fixed = TRUE)) %>%
@@ -290,7 +290,7 @@ ggplot(imove_clean, aes(x = age_y, fill = sex)) +
 
 ### Discharges
 
-**`r imove_clean %>% filter(!is.na(dischargedate), outcome == 1) %>% nrow()`** rows have a discharge-date and are marked as deceased. - This seems like it is ok to me?
+**`r imove_clean %>% filter(!is.na(dischargedate), outcome == 1) %>% nrow()`** rows have a discharge-date and are marked as deceased. - This seems like it is OK to me?
 
 **`r imove_clean %>% filter(!is.na(dischargedate), is.na(outcome)) %>% nrow()`** rows have a discharge-date but have no outcome.
 
@@ -304,7 +304,7 @@ We don't have the ***healthcare_contact*** variable
 max_swab_delay <- max(imove_clean$swabdelay, na.rm = TRUE)
 max2_swab_delay <- filter(imove_clean, swabdelay != max_swab_delay) %>% pull(swabdelay) %>%  max()
 ```
-The longest time from symtom onset to swab is: `r max_swab_delay` days with onset date:`r imove_clean$onsetdate[which(imove_clean$swabdelay == max_swab_delay)]`, swab date: `r imove_clean$swabdate[which(imove_clean$swabdelay == max_swab_delay)]` and admission date: `r imove_clean$admitdate[which(imove_clean$swabdelay == max_swab_delay)]`
+The longest time from symptom onset to swab is: `r max_swab_delay` days with onset date:`r imove_clean$onsetdate[which(imove_clean$swabdelay == max_swab_delay)]`, swab date: `r imove_clean$swabdate[which(imove_clean$swabdelay == max_swab_delay)]` and admission date: `r imove_clean$admitdate[which(imove_clean$swabdelay == max_swab_delay)]`
 The second longest time is: `r max2_swab_delay` days with onset date:`r imove_clean$onsetdate[which(imove_clean$swabdelay == max2_swab_delay)]`, swab date: `r imove_clean$swabdate[which(imove_clean$swabdelay == max2_swab_delay)]` and admission date: `r imove_clean$admitdate[which(imove_clean$swabdelay == max2_swab_delay)]`
 
 ```{r swab_delay_freq_poly}
@@ -319,9 +319,15 @@ ggplot(imove_clean %>% filter(swabdelay <= max2_swab_delay), aes(swabdelay)) +
 
 **`r imove_clean %>% filter(swabdelay > 21) %>% nrow()`** rows have `swabdelay` greater than 21 days.
 
-## Time to between swab and admission
+## Time to between onset and admission
 
-**`r imove_clean %>% filter(nosoc < 0) %>% nrow()`** rows have a negative `nosoc` (admitted before swab date.
+**`r imove_clean %>% filter(nosoc < 0) %>% nrow()`** rows have a negative `nosoc` (i.e. they were admitted before their symptoms started indicating a nosocomial infection).
+
+**`r imove_clean %>% filter(nosoc < -7) %>% nrow()`** rows have a onset > 7 days ***after*** admission.
+
+**`r imove_clean %>% filter(nosoc < -90) %>% nrow()`** rows have a onset > 90 days ***after*** admission.
+
+**`r imove_clean %>% filter(nosoc > 60) %>% nrow()`** (of these `r imove_clean %>% filter(nosoc > 60, readm) %>% nrow()` rows have a onset > 60 days ***before*** admission.
 
 
 

@@ -42,7 +42,7 @@ FunColdFlu <- function(x) {
 #'
 #' @return Logical
 FunCoughs <- function(x) {
-  z1 <- regexpr("COUGH", x, ignore.case = T) # are there any cough cases which should be excluded?
+  z1 <- regexpr("(?<!NO )COUGH", x, ignore.case = T, perl = TRUE) # are there any cough cases which should be excluded?
 
   return(ifelse(z1 > 0, 1, 0))
 }
@@ -53,8 +53,8 @@ FunCoughs <- function(x) {
 #'
 #' @return Logical
 FunFever <- function(x) {
-  z1 <- regexpr("FEVER", x, ignore.case = T)
-  z2 <- regexpr("TEMP", x, ignore.case = T)
+  z1 <- regexpr("(?<!NO )FEVER", x, ignore.case = T, perl = TRUE)
+  z2 <- regexpr("(?<!NO )TEMP", x, ignore.case = T, perl = TRUE)
   z3 <- regexpr("[A-Z]TEMP", x, ignore.case = T) # highlighted HIGHTEMP, ATTEMPTED
   z4 <- regexpr("ATTEMPT", x, ignore.case = T)
 

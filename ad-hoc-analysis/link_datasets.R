@@ -20,7 +20,7 @@ rapid_data <- rapid_data %>%
 ### Create Linkages
 
 # COCIN (also includes all RAPID data)
-source("ad-hoc-analysis/linkage_COCIN.R")
+source("ad-hoc-analysis/linkage_cocin.R")
 
 # SICSAG
 source("ad-hoc-analysis/linkage_sicsag.R")

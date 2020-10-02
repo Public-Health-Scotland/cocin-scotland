@@ -15,12 +15,11 @@ SMR01 <- SMR01 %>%
 # Match on to data
 data_smr01 <- rapid_data %>%
   left_join(SMR01, by = "chi_number") %>%
-  select(chi_number, adm_date, dis_date, smr01_adm, smr01_dis) %>%
+  select(chi_number, adm_date, dis_date, smr01_dis) %>%
   filter(smr01_dis < adm_date) %>%
-  mutate(year_marker = adm_date - years(1)) %>%
-  filter(smr01_dis > year_marker) %>%
   group_by(chi_number) %>%
   summarise() %>%
+  filter(smr01_dis > (adm_date - years(1))) %>%
   mutate(prev_hosp_smr01 = "Yes")
 
 # read in raw RAPID file

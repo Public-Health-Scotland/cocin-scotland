@@ -2,8 +2,9 @@ source("extract-data/00_setup-environment.R")
 
 # Create COCIN admissions
 
-cocin <- read_rds(path(server_dir, str_glue("{date}_cocin-clean-data.rds", 
-                                            date = latest_server_data("cocin")))) 
+cocin <- read_rds(path(server_dir, str_glue("{date}_cocin-clean-data.rds",
+  date = latest_server_data("cocin")
+)))
 
 #########################################################
 #################### STUDY IDENTIFIERS ##################
@@ -28,8 +29,10 @@ hospitalward <- cocin %>%
   group_by(subjid) %>%
   mutate(
     # Discharge Date from Hospital
-    dischargedate_cocin = case_when(any(dsterm %in% c("Discharged alive", "Death",
-                                                      "Palliative discharge")) ~ dsstdtc)
+    dischargedate_cocin = case_when(any(dsterm %in% c(
+      "Discharged alive", "Death",
+      "Palliative discharge"
+    )) ~ dsstdtc)
   ) %>%
   summarise(
     # Include CHI for linkage
@@ -38,7 +41,7 @@ hospitalward <- cocin %>%
     admitdate_cocin = first(na.omit(hostdat)),
     # Discharge Date
     dischargedate_cocin = first(na.omit(dischargedate_cocin))
-  ) 
+  )
 
 
 #########################################################
@@ -64,7 +67,7 @@ patientchar <- cocin %>%
     hcw_cocin = first(na.omit(healthwork_erterm)),
     ethnicity_cocin = first(na.omit(ethnicity)),
     ethnicity_grouped_cocin = first(na.omit(ethnicity_grouped))
-  ) 
+  )
 
 #########################################################
 ######### CASE SEVERITY - COVID OR NOT ##################
@@ -98,7 +101,7 @@ caseseverity_symptoms <- cocin %>%
     conjunct = first(na.omit(conjunct_ceoccur_v2)),
     dermato = first(na.omit(rash_ceoccur_v2)),
     onsetdate = first(na.omit(cestdat))
-  ) 
+  )
 
 #########################################################
 ######## CASE SEVERITY - SEVERITY INDICATORS ############
@@ -126,7 +129,7 @@ caseseverity_ind <- cocin %>%
     nhs_chi = first(na.omit(nhs_chi)),
     outcome_cocin = first(na.omit(dsterm)),
     vent = first(na.omit(ventilation))
-  ) 
+  )
 
 #########################################################
 ######## RISK FACTORS - CLOSE CONTACT SETTING ###########
@@ -171,13 +174,13 @@ underlyingcc <- cocin %>%
     dementia = first(na.omit(dementia_mhyn)),
     diabetes = first(na.omit(diabetes_mhyn)),
     heartdis = first(na.omit(chrincard)),
-    immuno   = first(na.omit(aidshiv_mhyn)),
+    immuno = first(na.omit(aidshiv_mhyn)),
     liverdis = first(na.omit(modliv)),
     obese = first(na.omit(obesity_mhyn)),
     rendis = first(na.omit(renal_mhyn)),
     rheumat = first(na.omit(rheumatologic_mhyn)),
     stroke = first(na.omit(stroke_ceterm))
-  ) 
+  )
 
 #########################################################
 ############# RISK FACTORS - MEDICATIONS ################
@@ -190,7 +193,7 @@ rkhospmedc <- cocin %>%
     nhs_chi = first(na.omit(nhs_chi)),
     prone = first(na.omit(pronevent_prtrt)),
     plasma = first(na.omit(conv_plasma_cmyn))
-  ) 
+  )
 
 #########################################################
 ################ FINAL ISARIC DATASET ###################
@@ -209,7 +212,7 @@ cocin_admissions <- list(
 cocin_chi <- cocin_admissions %>%
   filter(!is.na(chi_number)) %>%
   group_by(chi_number, admitdate_cocin) %>%
-  summarise_all(list(~first(na.omit(.)))) %>%
+  summarise_all(list(~ first(na.omit(.)))) %>%
   ungroup()
 
 # COCIN without CHI

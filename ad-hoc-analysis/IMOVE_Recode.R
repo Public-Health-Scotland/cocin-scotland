@@ -125,10 +125,10 @@ patientinfo <- data %>%
     postcode  = postcode,
     # residence - This is given as it is in RAPID data, needs recoded
     residence = admitted_transfer_from_type,
-    # onsetdate - Fix wrong date issue
-    onsetdate = as.character(onsetdate),
-    onsetdate = ifelse(onsetdate == '2010-03-26', '2020-03-26', onsetdate),
-    onsetdate = as.Date(onsetdate),
+    # onsetdate - Fix wrong date issue (sinlge record)
+    onsetdate = if_else(onsetdate == ymd('2010-03-26') & adm_date == ymd("2020-03-26"), 
+                        ymd('2020-03-26'), 
+                        onsetdate),
     # swabdate - from RAPID
     swabdate = test_date
   ) %>%

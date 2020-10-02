@@ -35,25 +35,37 @@ if (is.na(Sys.getenv("ccp_token", unset = NA))) {
 
 
 ## Note - need to come off the VPN connection for the below
+
+### 2 - Extract Scottish data ----
+
+
 # Avoid using the API on the hour as this is when a lot of reports refresh
 while (minute(Sys.time()) %in% c(59, 0:5)) {
   message("Waiting till after the hour to avoid overloading the API")
   Sys.sleep(30)
 }
 
+# TODO add in a filter to only include variables we need here.
+# variables <- c("subjid", "...")
+
 extract <- redcap_read(
   redcap_uri = "https://ncov.medsci.ox.ac.uk/api/",
   export_data_access_groups = TRUE,
   token = Sys.getenv("ccp_token"),
-  fields = "subjid"
-)$data
+  # fields = variables
+)$data %>%
+  as_tibble()
 
 
-### 2 - Select Scottish data ----
+# Record extract time
+extract_date <- Sys.time()
+
+# Fix bad location codes
+extract %<>%
+  fix_bad_loc_codes()
 
 # Create scottish location lookup
 scot_locations <-
-
   # Extract Scottish hospital location codes
   read_csv(
     paste0(
@@ -67,7 +79,6 @@ scot_locations <-
       HB = col_character()
     )
   ) %>%
-
   # Extract health board names and join
   dplyr::left_join(
     read_csv(
@@ -84,49 +95,6 @@ scot_locations <-
     by = "HB"
   ) %>%
   clean_names()
-
-# Match lookup to CoCIN extract
-extract %<>%
-  dplyr::mutate(hospid = str_sub(subjid, end = 5)) %>%
-  dplyr::left_join(scot_locations, by = c("hospid" = "location"))
-
-# Extract list of Data Access Groups (DAG) associated with Scottish locations
-scot_dag <-
-  extract %>%
-  dplyr::filter(!is.na(location_name)) %>%
-  dplyr::distinct(redcap_data_access_group)
-
-# Select CoCIN records
-extract %<>%
-  dplyr::filter(redcap_data_access_group %in% scot_dag |
-    !is.na(location_name))
-
-## Download COCIN data for all Scottish patients
-
-scotpat <- unique(extract$subjid)
-
-
-# Avoid using the API on the hour as this is when a lot of reports refresh
-while (minute(Sys.time()) %in% c(59, 0:5)) {
-  message("Waiting till after the hour to avoid overloading the API")
-  Sys.sleep(30)
-}
-
-extract <- redcap_read(
-  redcap_uri = "https://ncov.medsci.ox.ac.uk/api/",
-  export_data_access_groups = TRUE,
-  token = Sys.getenv("ccp_token"),
-  records = scotpat
-)$data
-
-
-# Record extract time
-extract_date <- Sys.time()
-
-# Fix bad location codes
-extract %<>%
-  fix_bad_loc_codes()
-
 
 # Match lookup to CoCIN extract
 extract %<>%

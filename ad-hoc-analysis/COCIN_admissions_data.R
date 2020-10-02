@@ -10,16 +10,14 @@ cocin <- read_rds(path(server_dir, str_glue("{date}_cocin-clean-data.rds",
 #########################################################
 
 studyidentifiers <- cocin %>%
-  mutate(
-    # Take the date of a positive test result
-    swabdate = case_when(any(mborres == "Positive") ~ mbdat)) %>%
+  # Take the date of a positive test result
+  mutate(swabdate = if_else(mborres == "Positive", mbdat, NA_Date_)) %>%
   group_by(subjid) %>%
   summarise(
-    # Include CHI for linkage
-    nhs_chi = first(na.omit(nhs_chi)),
+    nhs_chi = first(na.omit(nhs_chi)), # Include CHI for linkage
     hospitalcode = first(na.omit(hospid)),
     dob_cocin = first(na.omit(agedat)),
-    swabdate = first(na.omit(swabdate))
+    swabdate = min(na.omit(swabdate))
   )
 
 #########################################################

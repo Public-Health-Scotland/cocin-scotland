@@ -570,9 +570,10 @@ labtests <- data %>%
 # Combine all datasets
 IMOVE_data <- list(demographics, hospinfo, patientinfo, symptoms, hospitaltests,
                    medications, contactinfo, conditions, outcomes, labtests) %>%
-  reduce(merge, by = c("chi_number","adm_date")) %>%
+  map(arrange, chi_number, adm_date) %>%
   #remove adm_date variable as this is for joining only
-  select(-adm_date, -chi_number)
+  map(select, c(-adm_date, -chi_number)) %>% 
+  bind_cols()
 
 # Remove datasets no longer required
 rm(demographics, hospinfo, patientinfo, symptoms, hospitaltests,

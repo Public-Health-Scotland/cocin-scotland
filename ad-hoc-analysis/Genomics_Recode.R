@@ -1,6 +1,7 @@
 
 
 genomics_hospdata <- data %>%
+  #TODO change to use case_when()
    mutate(ethnic_group = ifelse(substr(ethnicity_group,1,1) == '1',
                                      'White',
                          ifelse(substr(ethnicity_group,1,1) == '2',

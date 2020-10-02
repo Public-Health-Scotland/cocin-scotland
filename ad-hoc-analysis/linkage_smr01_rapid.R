@@ -17,9 +17,8 @@ data_smr01 <- rapid_data %>%
   left_join(SMR01, by = "chi_number") %>%
   select(chi_number, adm_date, dis_date, smr01_dis) %>%
   filter(smr01_dis < adm_date) %>%
-  group_by(chi_number) %>%
-  summarise() %>%
   filter(smr01_dis > (adm_date - years(1))) %>%
+  distinct(chi_number) %>% 
   mutate(prev_hosp_smr01 = "Yes")
 
 # read in raw RAPID file
@@ -43,8 +42,7 @@ data_rapid <- rapid_data %>%
   filter(rapid_dis < adm_date) %>%
   mutate(year_marker = adm_date - years(1)) %>%
   filter(rapid_dis > year_marker) %>%
-  group_by(chi_number) %>%
-  summarise() %>%
+  distinct(chi_number) %>% 
   mutate(prev_hosp_rapid = "Yes")
 
 # Now match these CHIs on to full data

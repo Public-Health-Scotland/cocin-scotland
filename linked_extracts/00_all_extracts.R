@@ -96,7 +96,8 @@ sicsag_file_path <- path(
 )
 
 # Read in data
-sicsag <- read_csv(sicsag_file_path)
+sicsag <- read_tsv(sicsag_file_path)
+if (ncol(sicsag) == 1) stop("Probable error with sicsag file (try swapping between read_csv and read_tsv")
 
 # write extract
 write_rds(sicsag, path(here("data", str_glue("SICSAG_extract.rds"))), compress = "gz")

@@ -15,6 +15,12 @@ IMOVE_data_anon <- IMOVE_data_anon %>%
   # Remove Postcode variable
   select(-postcode)
 
+# No IG for pseudonomised data so dropping anon_id
+IMOVE_data_anon <- IMOVE_data_anon %>%
+  arrange(anon_id) %>% 
+  mutate(row_num = row_number(), .before = everything()) %>% 
+  select(-anon_id)
+
 # Removing NA onsetdate
 # IMOVE_data_anon <- IMOVE_data_anon %>%
 #   filter(!is.na(onsetdate)) 

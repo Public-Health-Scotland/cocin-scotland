@@ -1,10 +1,10 @@
 source("extract-data/00_setup-environment.R")
 
 # Read in SMR01 extract
-icu <- read_rds(path(here("data", str_glue("SICSAG_extract.rds"))))
+sicsag_extract <- read_rds(path(here("data", str_glue("SICSAG_extract.rds"))))
 
 # Prepare data for matching - create ICU 'stays'
-icu <- icu %>%
+icu <- sicsag_extract %>%
   select(ChiNo, AdmitUnit, DiscDate, covidICUorHDU) %>%
   rename(chi_number = ChiNo) %>%
   mutate(chi_number = as.character(chi_number)) %>%
@@ -78,4 +78,4 @@ rapid_icu <- rapid_data %>%
   mutate(icu = ifelse(is.na(icu), 'No', icu)) %>%
   select(chi_number, adm_date, icu, icuadmitdate, icudisdate, los_icu, covidICUorHDU)
 
-rm(icu, icu_data)
+rm(sicsag_extract, icu, icu_data)

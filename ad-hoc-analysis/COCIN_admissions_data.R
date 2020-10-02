@@ -202,7 +202,7 @@ cocin_admissions <- list(
   caseseverity_ind, caseseverity_symptoms, rkclosecontact,
   rkexamlab, underlyingcc, rkhospmedc
 ) %>%
-  reduce(merge, by = c("subjid","nhs_chi")) %>%
+  reduce(left_join, by = c("subjid", "nhs_chi")) %>%
   rename(chi_number = nhs_chi)
 
 # COCIN with CHI - remove duplicate admissions

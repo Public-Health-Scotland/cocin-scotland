@@ -22,10 +22,11 @@ demographics <- data %>%
                     sex == "Unknown" ~ 3L,
                     TRUE ~ NA_integer_),
     # age_y - age in years
-    age_y = as.integer(ifelse(age > 1, age, NA)),
+    age_y = if_else(age >= 2 , age, NA_integer_),
     # age_m - age in months for those under two, can calculate from RAPID DOB
-    age_m = as.integer(ifelse(age < 2, 
-                              interval(dob, adm_date) %/% months(1), NA)),
+    age_m = as.integer(if_else(age < 2, 
+                               as.integer(time_length(dob %--% adm_date, "months")),
+                               NA_integer_)),
     # height - N/A
     height = NA,
     # weight - N/A

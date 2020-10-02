@@ -32,13 +32,11 @@ source("ad-hoc-analysis/linkage_smr01_rapid.R")
 source("ad-hoc-analysis/linkage_nrs.R")
 
 ### Link on all datasets
-data <- rapid_cocin %>%
-  left_join(rapid_icu, by = c("chi_number","adm_date")) %>%
-  left_join(rapid_prevhosp, by = c("chi_number","adm_date")) %>%
-  left_join(rapid_deaths, by = c("chi_number","adm_date"))
+data <- list(rapid_cocin, rapid_icu, rapid_prevhosp, rapid_deaths) %>%
+  reduce(left_join,by = c("chi_number","adm_date")) 
 
 # write dataset
-write_rds(data, path(here("data", str_glue("Linked_Dataset.rds"))), 
+write_rds(data, path(here("data", "Linked_Dataset.rds")), 
           compress = "gz")
 
 # remove datasets not required
@@ -48,7 +46,7 @@ rm(rapid_data, rapid_cocin, rapid_deaths, rapid_icu, rapid_prevhosp)
 source("ad-hoc-analysis/IMOVE_Recode.R")
 
 # write dataset
-write_rds(IMOVE_data, path(here("data", str_glue("IMOVE_data.rds"))), 
+write_rds(IMOVE_data, path(here("data", "IMOVE_data.rds")), 
           compress = "gz")
 
 ### Genomics Recode

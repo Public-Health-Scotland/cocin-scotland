@@ -21,14 +21,6 @@ if (!require(lubridate)) {
   install.packages("lubridate")
   library(lubridate)
 }
-if (!require(finalfit)) {
-  install.packages("finalfit")
-  library(finalfit)
-}
-if (!require(Hmisc)) {
-  install.packages("Hmisc")
-  library(Hmisc)
-}
 if (!require(tidylog)) {
   install.packages("tidylog")
   library(tidylog)

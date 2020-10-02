@@ -358,5 +358,5 @@ write_rds(
   compress = "gz"
 )
 
-
+rm(scot_data)
 ### END OF SCRIPT ###

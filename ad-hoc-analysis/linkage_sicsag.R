@@ -7,7 +7,9 @@ sicsag_extract <- read_rds(path(here("data", str_glue("SICSAG_extract.rds"))))
 icu <- sicsag_extract %>%
   select(ChiNo, AdmitUnit, DiscDate, covidICUorHDU) %>%
   rename(chi_number = ChiNo) %>%
-  mutate(chi_number = as.character(chi_number)) %>%
+  mutate(chi_number = as.character(chi_number)) %>% 
+  mutate(chi_number = chi_pad(chi_number)) %>% # Fix missing leading zeros
+  filter(chi_check(chi_number) == "Valid CHI") %>% # Remove any rows with bad CHI numbers
   mutate(AdmitUnit = as.Date(AdmitUnit, format="%m/%d/%Y"),
          DiscDate  = as.Date(DiscDate, format="%m/%d/%Y")) %>%
   arrange(chi_number, AdmitUnit, DiscDate) %>%

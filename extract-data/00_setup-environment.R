@@ -77,6 +77,10 @@ if (!require(odbc)) {
   install.packages("odbc")
   library(odbc)
 }
+if (!require(openssl)) {
+  install.packages("openssl")
+  library(openssl)
+}
 
 
 ### 2 - Load functions ---

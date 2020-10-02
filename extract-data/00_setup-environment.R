@@ -73,6 +73,10 @@ if (!require(phsmethods)) {
   remotes::install_github("Health-SocialCare-Scotland/phsmethods")
   library(phsmethods)
 }
+if (!require(odbc)) {
+  install.packages("odbc")
+  library(odbc)
+}
 
 
 ### 2 - Load functions ---

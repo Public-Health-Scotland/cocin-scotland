@@ -32,9 +32,11 @@ cocin_adms_nonchi_1 <- cocin_admissions %>%
          hospital_of_treatment_code = hospitalcode,
          dob                        = dob_cocin) %>%
   # Remove CHI as not needed
-  select(-chi_number) %>%
-  mutate(sex = substr(sex,1,1),
-         sex = ifelse(sex == "N", "U", sex))
+  select(-chi_number) %>% 
+  mutate(sex = case_when(sex == "Male" ~ "M",
+                         sex == "Female" ~ "F",
+                         sex == "Not specified" ~ "U",
+                         TRUE ~ NA_character_))
 
 # COCIN with missing CHI numbers for joining- adm date, sex, DOB, and test date
 # Create joining variables
@@ -46,8 +48,10 @@ cocin_adms_nonchi_2 <- cocin_admissions %>%
          test_date                  = swabdate) %>%
   # Remove CHI as not needed
   select(-chi_number) %>%
-  mutate(sex = substr(sex,1,1),
-         sex = ifelse(sex == "N", "U", sex))
+  mutate(sex = case_when(sex == "Male" ~ "M",
+                         sex == "Female" ~ "F",
+                         sex == "Not specified" ~ "U",
+                         TRUE ~ NA_character_))
 
 
 #### CHI LINKAGE ####
@@ -112,3 +116,5 @@ rm(cocin_admissions, cocin_adms_chi, cocin_adms_chi_minus1, cocin_adms_chi_plus1
    cocin_adms_nonchi_1, cocin_adms_nonchi_2,
    rapid_cocin_chi_minus1, rapid_cocin_chi_plus1, rapid_cocin_chi_same,
    rapid_cocin_nonchi_1, rapid_cocin_nonchi_2)
+
+

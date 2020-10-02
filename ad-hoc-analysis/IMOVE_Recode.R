@@ -6,7 +6,6 @@ source("extract-data/00_setup-environment.R")
 #######################################
 
 demographics <- data %>%
-  
   mutate(
     # idcountry - country code
     idcountry = "SC",
@@ -32,27 +31,22 @@ demographics <- data %>%
     # weight - N/A
     weight = NA
   ) %>%
-  
   # select only required variables for this section
-  select(chi_number, adm_date, idcountry, hosp_id2, age_y, age_m,  sex, height, weight)%>%
-  
-  mutate_at(vars(sex), .funs = factor)
+  select(chi_number, adm_date, idcountry, hosp_id2, age_y, age_m,  sex, height, weight) %>%
+  mutate(sex = factor(sex))
 
 #################################
 ###### Hospital Information #####
 #################################
 
 hospinfo <- data %>%
-  
   # If record marked as a reinfection, treat as a new admission rather than a readmission
-  mutate(readmission = ifelse(reinfection == 1, 0, readmission)) %>%
+  mutate(readmission = if_else(reinfection == 1, 0L, readmission)) %>%
   group_by(chi_number) %>%
   # Get the max number of readmissions per CHI
   mutate(no_of_readmissions = max(readmission)) %>%
   ungroup() %>%
-  
   mutate(
-    
     # admitdate - this comes from RAPID data
     admitdate = adm_date,
     # dischargedate - this comes from RAPID
@@ -62,8 +56,9 @@ hospinfo <- data %>%
     # hospitalward_oth - N/A
     hospitalward_oth = NA,
     # icu - from SICSAG
-    icu = ifelse(icu == 'No', 0,
-                 ifelse(icu == 'Yes', 1, 8)),
+    icu = case_when(icu == "No" ~ 0L,
+                    icu == "Yes" ~ 1L,
+                    TRUE ~ 8L),
     # icuadmitdate - from SICSAG
     icuadmitdate = icuadmitdate,
     # icudisdate - from SICSAG
@@ -73,15 +68,16 @@ hospinfo <- data %>%
     # los_icu - from SICSAG
     los_icu = as.integer(los_icu),
     # multiple_hosp
-    multiple_hosp = ifelse(no_of_readmissions >= 1, 1, 0),
-    multiple_hosp = ifelse(is.na(multiple_hosp), 0, multiple_hosp),
+    multiple_hosp = if_else(no_of_readmissions >= 1, 1, 0),
+    multiple_hosp = if_else(is.na(multiple_hosp), 0, multiple_hosp),
     # multiple_episode
     multiple_episode = no_of_readmissions,
-    multiple_episode = ifelse(is.na(multiple_episode), 0, multiple_episode),
+    multiple_episode = if_else(is.na(multiple_episode), 0L, multiple_episode),
     multiple_episode = as.integer(multiple_episode),
     # prevhosp  
-    prevhosp = ifelse(prevhosp == 'No', 0,
-                      ifelse(prevhosp == 'Yes', 1, 8))
+    prevhosp = case_when(prevhosp == 'No' ~ 0L,
+                         prevhosp == 'Yes' ~ 1L,
+                         TRUE ~ 8L)
   ) %>%
   
   # select only required variables for this section
@@ -89,7 +85,7 @@ hospinfo <- data %>%
          icu, icuadmitdate, icudisdate, los_hosp, los_icu, multiple_hosp, 
          multiple_episode, prevhosp) %>%
   
-  mutate_at(vars(hospitalward, icu, multiple_hosp, prevhosp), .funs = factor)
+  mutate_at(vars(hospitalward, icu, multiple_hosp, prevhosp), list(factor))
 
 
 ###############################
@@ -137,7 +133,7 @@ patientinfo <- data %>%
   select(chi_number, adm_date, hcw, smoking, pregnant,
          trimester, postpartum, postcode, residence, onsetdate, swabdate)%>%
   
-  mutate_at(vars(-chi_number, -adm_date, -postcode, -onsetdate, -swabdate), .funs = factor)
+  mutate_at(vars(-chi_number, -adm_date, -postcode, -onsetdate, -swabdate), list(factor))
 
 ####################################
 ##### CASE SEVERITY (SYMPTOMS) #####
@@ -260,7 +256,7 @@ symptoms <- data %>%
          headache, malaise, myalgia, nausea, palp, sob, sorethroat, suddenonset, 
          tach, vomit) %>%
   
-  mutate_at(vars(-chi_number, -adm_date), .funs = factor)
+  mutate_at(vars(-chi_number, -adm_date), list(factor))
 
 
 ##########################################
@@ -308,7 +304,7 @@ hospitaltests <- data %>%
   select(chi_number, adm_date, abo, bmi, ct_res, ct_res_sp,  ct_us_ecg, cxr, cxroth_sp, 
          ecg_qt, examoth_sp, ox_nasal, oxsat) %>%
   
-  mutate_at(vars(abo, ct_res, ct_us_ecg, cxr, ecg_qt, ox_nasal), .funs = factor)
+  mutate_at(vars(abo, ct_res, ct_us_ecg, cxr, ecg_qt, ox_nasal), list(factor))
 
 
 ##########################################
@@ -360,7 +356,7 @@ medications <- data %>%
   select(chi_number, adm_date, nebu, prone, trialdrugs, study_convpl, study_oth, 
          study_oth_sp, vent, vent_sp, vent_type, venttype_sp) %>%
   
-  mutate_at(vars(-chi_number, -adm_date), .funs = factor)
+  mutate_at(vars(-chi_number, -adm_date), list(factor))
 
 ##########################################
 ######## CONTACT INFORMATION #############
@@ -382,7 +378,7 @@ contactinfo <- data %>%
   # select only required variables for this section
   select(chi_number, adm_date, closecont, closecont_type, closecont_sp) %>%
   
-  mutate_at(vars(-chi_number, -adm_date), .funs = factor)
+  mutate_at(vars(-chi_number, -adm_date), list(factor))
 
 
 ##########################################
@@ -473,7 +469,7 @@ conditions <- data %>%
          heartdis,  hypert, immuno, liverdis, lungdis, neuromusc, obese,
          rendis, rheumat, stroke, tuberc) %>%
   
-  mutate_at(vars(-chi_number, -adm_date), .funs = factor)
+  mutate_at(vars(-chi_number, -adm_date), list(factor))
 
 
 
@@ -513,7 +509,7 @@ outcomes <- data %>%
   # select only required variables for this section
   select(chi_number, adm_date, outcome, deathcause, deathdate, healthcare_contact) %>%
   
-  mutate_at(vars(-chi_number, -adm_date, -deathdate), .funs = factor)
+  mutate_at(vars(-chi_number, -adm_date, -deathdate), list(factor))
 
 
 ####################################
@@ -525,7 +521,7 @@ labtests <- data %>%
   
   mutate(
     
-    # lab_covtest - marked as Yes for everyone with a test date       
+    # lab_covtest - marked as Yes for everyone with a test date (from ECOSS)    
     lab_covtest = ifelse(!is.na(test_date), 1, 0),
     
     # lab_covtesttype - all PCR for those with test
@@ -560,7 +556,7 @@ labtests <- data %>%
   select(chi_number, adm_date, lab_covid, lab_covtest, lab_covtesttype, lab_covtesttype_sp, 
          covid, genetic_group, seq) %>%
   
-  mutate_at(vars(-chi_number, -adm_date), .funs = factor)
+  mutate_at(vars(-chi_number, -adm_date), list(factor))
 
 
 ##########################################

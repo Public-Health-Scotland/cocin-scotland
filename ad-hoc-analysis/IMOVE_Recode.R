@@ -17,10 +17,10 @@ demographics <- data %>%
     # consent - this is NA
     consent = NA,
     # sex - take from RAPID  
-    sex = ifelse(sex == "Female", 0,
-                 ifelse(sex == "Male", 1, 
-                        ifelse(sex == "Unknown", 3, 8))),
-    sex = ifelse(is.na(sex), 8, sex),
+    sex = case_when(sex == "Female" ~ 0L,
+                    sex == "Male" ~ 1L,
+                    sex == "Unknown" ~ 3L,
+                    TRUE ~ NA_integer_),
     # age_y - age in years
     age_y = as.integer(ifelse(age > 1, age, NA)),
     # age_m - age in months for those under two, can calculate from RAPID DOB

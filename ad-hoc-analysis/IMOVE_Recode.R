@@ -99,10 +99,10 @@ hospinfo <- data %>%
 patientinfo <- data %>%
   
   mutate(
-    # hcw - from COCIN only
-    hcw = ifelse(hcw == "NO", 0,
-                 ifelse(hcw == "YES", 1, 8)),
-    hcw = ifelse(is.na(hcw), 8, hcw),
+    # hcw - from RAPID (via ECOSS) and COCIN 
+    hcw = case_when(hcw == 1 | hcw_cocin == "YES" ~ 1L,
+                    hcw == 0 | hcw_cocin == "NO" ~ 0L,
+                    TRUE  ~ 8L),
     # smoking - from COCIN only
     smoking = ifelse(smoking == "Never Smoked", 0,
                      ifelse(smoking == "Former Smoker", 1,

@@ -16,8 +16,10 @@ sari_data <- data %>%
   mutate(
     who_sari = if_else(fever == 1 & cough == 1, TRUE, FALSE),
     who_sari_adapted = if_else(fever == 1 | cough == 1, TRUE, FALSE),
-    imove_sari = if_else((fever == 1| malaise == 1| headache == 1| myalgia == 1| confusion == 1| dizzy == 1) &
-                           (cough == 1| sorethroat == 1| sob == 1), TRUE, FALSE)
+    imove_sari = if_else(
+      (fever == 1 | malaise == 1 | headache == 1 | myalgia == 1 | confusion == 1 | dizzy == 1) &
+      (cough == 1 | sorethroat == 1 | sob == 1), TRUE, FALSE),
+    none = if_else(!who_sari & !who_sari_adapted & !imove_sari, TRUE, FALSE)
   ) %>%
   mutate(sari_def = case_when(
     who_sari ~ "WHO",
@@ -28,7 +30,7 @@ sari_data <- data %>%
     as_factor())
 
 
-sari_definition_count <- count(sari_data, who_sari, who_sari_adapted, imove_sari)
+sari_definition_count <- count(sari_data, who_sari, who_sari_adapted, imove_sari, none)
 
 pct_sari_match <- sari_data %>%
   summarise(
@@ -42,24 +44,30 @@ pct_sari_match <- sari_data %>%
   )
 
 sari_data %>%
+  select(admitdate, who_sari, who_sari_adapted, imove_sari, none) %>% 
+  pivot_longer(cols = -admitdate,
+               names_to = "sari_def") %>% 
+  filter(value == TRUE) %>% 
   ggplot(aes(x = admitdate, colour = sari_def)) +
   geom_freqpoly(binwidth = 7) +
-  scale_color_discrete("SARI definition") +
+  scale_colour_brewer("SARI definition", palette = "Paired ") +
   theme_minimal()
 
 
 sari_data %>%
-  # filter(who_sari_adapted == FALSE) %>%
-  select(sari_def, admitdate, onsetdate, abdopain:vomit, -cough, -fever) %>%
+  select(who_sari, who_sari_adapted, imove_sari, none, abdopain:vomit, -cough, -fever) %>%
+  pivot_longer(cols = c(who_sari:none),
+               names_to = "sari_def") %>% 
+  filter(value == TRUE) %>% 
   pivot_longer(
     cols = c(abdopain:vomit),
     names_to = "symptom",
     values_to = "symptom_val"
   ) %>%
-  filter(symptom_val %in% c(1, 0)) %>%
-  ggplot(aes(y = symptom, fill = sari_def)) +
+  filter(symptom_val == 1) %>%
+  ggplot(aes(x = symptom, fill = sari_def)) +
   scale_fill_discrete("SARI definition") +
-  geom_bar(position = position_stack(reverse = TRUE)) +
+  geom_bar(position = "dodge") +
   theme_minimal() +
   theme(legend.position = "top")
 
@@ -79,36 +87,40 @@ sari_data %>%
   theme(legend.position = "top") +
   facet_wrap("sari_def")
 
-sari_data %>% 
-  group_by(age_y) %>% 
-  mutate(none = if_else(who_sari | who_sari_adapted | imove_sari, FALSE, TRUE)) %>% 
-  summarise(across(c(who_sari, who_sari_adapted, imove_sari, none), sum, na.rm = TRUE)) %>% 
+sari_data %>%
+  group_by(age_y) %>%
+  mutate(none = if_else(who_sari | who_sari_adapted | imove_sari, FALSE, TRUE)) %>%
+  summarise(across(c(who_sari, who_sari_adapted, imove_sari, none), sum, na.rm = TRUE)) %>%
   ggplot(aes(x = age_y)) +
   geom_line(aes(y = who_sari), colour = "red") +
   geom_line(aes(y = who_sari_adapted), colour = "red", linetype = "dashed") +
   geom_line(aes(y = imove_sari), colour = "blue") +
   geom_line(aes(y = none), colour = "black")
 
-sari_data %>% 
-  group_by(age_y) %>% 
-  summarise(across(c(abdopain:vomit), ~sum(.x == 1, na.rm = TRUE))) %>% 
-  pivot_longer(cols = c(abdopain:vomit),
-               names_to = "symptoms",
-               values_to = "count") %>% 
+sari_data %>%
+  group_by(age_y) %>%
+  summarise(across(c(abdopain:vomit), ~ sum(.x == 1, na.rm = TRUE))) %>%
+  pivot_longer(
+    cols = c(abdopain:vomit),
+    names_to = "symptoms",
+    values_to = "count"
+  ) %>%
   ggplot(aes(x = age_y)) +
   geom_line(aes(y = count, colour = symptoms))
 
 
-sari_data %>% 
-  group_by(age_y, sex) %>% 
-  summarise(across(c(abdopain:vomit), ~sum(.x == 1, na.rm = TRUE))) %>% 
-  pivot_longer(cols = c(abdopain:vomit),
-               names_to = "symptoms",
-               values_to = "count") %>% 
+sari_data %>%
+  group_by(age_y, sex) %>%
+  summarise(across(c(abdopain:vomit), ~ sum(.x == 1, na.rm = TRUE))) %>%
+  pivot_longer(
+    cols = c(abdopain:vomit),
+    names_to = "symptoms",
+    values_to = "count"
+  ) %>%
   ggplot(aes(x = age_y, colour = sex)) +
   geom_line(aes(y = count)) +
   facet_wrap("symptoms")
-  
+
 
 sari_data %>%
   filter(who_sari_adapted == FALSE & who_sari == FALSE & imove_sari == FALSE) %>%
@@ -172,4 +184,4 @@ sari_data %>%
   geom_freqpoly(binwidth = 7) +
   scale_color_discrete("Other symptoms") +
   scale_linetype_discrete("") +
-theme_minimal()
+  theme_minimal()

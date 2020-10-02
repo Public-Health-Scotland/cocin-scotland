@@ -61,7 +61,7 @@ patientchar <- cocin %>%
     pregnant = first(na.omit(pregyn_rptestcd)),
     trimester = first(na.omit(egestage_rptestcd)),
     postpartum = first(na.omit(postpart_rptestcd)),
-    hcw = first(na.omit(healthwork_erterm)), 
+    hcw_cocin = first(na.omit(healthwork_erterm)),
     ethnicity_cocin = first(na.omit(ethnicity)),
     ethnicity_grouped_cocin = first(na.omit(ethnicity_grouped))
   ) 

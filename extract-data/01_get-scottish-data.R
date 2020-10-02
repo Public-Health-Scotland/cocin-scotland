@@ -139,7 +139,7 @@ redcap_metadata_read(
 )$data %>%
   write_csv(here("data", str_glue("{today()}_COCIN_metadata.csv")))
 
-rm(scot_data, scotpat, scot_dag, scot_locations, extract, extract_date)
+rm(scot_locations, extract, extract_date)
 
 
 ### END OF SCRIPT ###

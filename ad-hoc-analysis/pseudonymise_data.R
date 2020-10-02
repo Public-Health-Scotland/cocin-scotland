@@ -26,6 +26,7 @@ IMOVE_data_anon <- IMOVE_data_anon %>%
 #   filter(!is.na(onsetdate)) 
 
 write_rds(IMOVE_data_anon, here("data", str_glue("IMOVE_data_{today()}_Anon.rds")), compress = "gz")
+haven::write_dta(IMOVE_data_anon, here("data", str_glue("IMOVE_data_{today()}_Anon.dta")), version = 15)
 write_csv(IMOVE_data_anon, here("data", str_glue("IMOVE_data_{today()}_Anon.csv")))
 
 test <- read_rds(here("data", str_glue("IMOVE_data_{today()}_Anon.rds")))

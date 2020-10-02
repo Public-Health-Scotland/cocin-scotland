@@ -51,10 +51,14 @@ if (file_exists(rapid_data_local)) {
 # SMR01 data --------------------------------------------------------------
 # Get the SMR01 data
 
-# Define the database connection with SMRA 
-SMRA_connect <- dbConnect(odbc(), dsn="SMRA",
-                          uid=.rs.askForPassword("SMRA Username:"), 
-                          pwd=.rs.askForPassword("SMRA Password:"))
+# Define the database connection with SMRA
+if (!exists("SMRA_connect")) {
+  SMRA_connect <- dbConnect(odbc(),
+    dsn = "SMRA",
+    uid = .rs.askForPassword("SMRA Username:"),
+    pwd = .rs.askForPassword("SMRA Password:")
+  )
+}
 
 # Start Date of extract
 start_date <- c("'2019-01-01'")
@@ -98,10 +102,15 @@ write_rds(sicsag, path(here("data", str_glue("SICSAG_extract.rds"))), compress =
 # NRS data --------------------------------------------------------------
 # Get the Deaths data
 
-# Define the database connection with SMRA 
-SMRA_connect <- dbConnect(odbc(), dsn="SMRA",
-                          uid=.rs.askForPassword("SMRA Username:"), 
-                          pwd=.rs.askForPassword("SMRA Password:"))
+# Define the database connection with SMRA
+if (!exists("SMRA_connect")) {
+  SMRA_connect <- dbConnect(odbc(),
+    dsn = "SMRA",
+    uid = .rs.askForPassword("SMRA Username:"),
+    pwd = .rs.askForPassword("SMRA Password:")
+  )
+}
+
 
 start_date <- c("'2020-01-01'")
 

@@ -30,10 +30,9 @@ rapid <- rapid %>%
   rename(rapid_adm = admission_date,
          rapid_dis = discharge_date) %>%
   mutate(chi_number = as.character(chi_number),
-  mutate(chi_number = ifelse(nchar(chi_number) == 9, paste0('0', chi_number),
-                             chi_number))
          rapid_adm  = as_date(rapid_adm),
          rapid_dis  = as_date(rapid_dis)) %>%
+  mutate(chi_number = chi_pad(chi_number))
 
 # Match on to data
 data_rapid <- rapid_data %>%

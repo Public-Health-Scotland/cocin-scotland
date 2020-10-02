@@ -6,8 +6,8 @@ SMR01 <- read_rds(path(here("data", str_glue("SMR01_extract.rds"))))
 # Prepare data for matching
 SMR01 <- SMR01 %>%
   rename(chi_number = upi_number) %>%
-  mutate(admission_date = as.Date(admission_date),
-         discharge_date = as.Date(discharge_date)) %>%
+  mutate(admission_date = as_date(admission_date),
+         discharge_date = as_date(discharge_date)) %>%
   group_by(chi_number, link_no, cis_marker) %>%
   summarise(smr01_adm = min(admission_date),
             smr01_dis = max(discharge_date))
@@ -32,10 +32,10 @@ rapid <- rapid %>%
   rename(rapid_adm = admission_date,
          rapid_dis = discharge_date) %>%
   mutate(chi_number = as.character(chi_number),
-         rapid_adm  = as.Date(rapid_adm),
-         rapid_dis  = as.Date(rapid_dis)) %>%
   mutate(chi_number = ifelse(nchar(chi_number) == 9, paste0('0', chi_number),
                              chi_number))
+         rapid_adm  = as_date(rapid_adm),
+         rapid_dis  = as_date(rapid_dis)) %>%
 
 # Match on to data
 data_rapid <- rapid_data %>%

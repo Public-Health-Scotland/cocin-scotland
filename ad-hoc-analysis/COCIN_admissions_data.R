@@ -209,8 +209,8 @@ cocin_admissions <- list(
 cocin_chi <- cocin_admissions %>%
   filter(!is.na(chi_number)) %>%
   group_by(chi_number, admitdate_cocin) %>%
-  summarise_all(funs(first(na.omit(.)))) %>%
-  ungroup
+  summarise_all(list(~first(na.omit(.)))) %>%
+  ungroup()
 
 # COCIN without CHI
 cocin_nonchi <- cocin_admissions %>%

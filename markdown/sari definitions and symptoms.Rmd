@@ -1,0 +1,241 @@
+---
+title: "SARI definitions and symptoms comparison"
+author: "James McMahon"
+date: "01/10/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, 
+                      message = FALSE, 
+                      fig.align = "center", 
+                      out.width = "100%")
+source("extract-data/00_setup-environment.R")
+
+if (!exists("sari_data")) {
+  latest_data <- dir_info(path(server_dir, "..", "final_data")) %>%
+    filter(birth_time == max(birth_time, na.rm = TRUE)) %>%
+    pull(path)
+
+  message(str_glue("Using file {basename(latest_data)}"))
+
+  data <- read_rds(latest_data) %>%
+    as_tibble()
+
+
+  sari_data <- data %>%
+    filter(covid == 1) %>%
+    filter_at(vars(fever, cough, malaise, headache, myalgia, confusion, dizzy, sorethroat, sob), any_vars(. != 8)) %>%
+    mutate(
+      who_sari = if_else(fever == 1 & cough == 1, TRUE, FALSE),
+      who_sari_adapted = if_else(fever == 1 | cough == 1, TRUE, FALSE),
+      imove_sari = if_else(
+        (fever == 1 | malaise == 1 | headache == 1 | myalgia == 1 | confusion == 1 | dizzy == 1) &
+          (cough == 1 | sorethroat == 1 | sob == 1), TRUE, FALSE
+      ),
+      none = if_else(!who_sari & !who_sari_adapted & !imove_sari, TRUE, FALSE)
+    ) %>%
+    mutate(sari_def = case_when(
+      who_sari ~ "WHO",
+      who_sari_adapted ~ "WHO-adapted",
+      imove_sari ~ "IMOVE",
+      TRUE ~ "None"
+    ) %>%
+      as_factor()) %>%
+    mutate(
+      age = case_when(
+        between(age_m, 0, 11) ~ 0L,
+        between(age_m, 12, 23) ~ 1L,
+        age_m == 24 ~ 2L,
+        TRUE ~ age_y
+      ),
+      age_grp = age_group(age, by = 20, as_factor = TRUE)
+    )
+}
+```
+
+## Overview
+
+For this analysis, I first filtered the `r path_file(latest_data)` dataset to only those with a positive COVID lab test (linked to ECOSS) this gives `r data %>% filter(covid == 1) %>% nrow()` episodes. These are then further filtered to only episodes with at least one of the symptoms of interest recorded leaving `r sari_data %>% nrow()` episodes.
+
+The symptoms of interest were: **fever, cough, malaise, headache, myalgia, confusion, dizziness, sore throat** and **shortness of breath**.
+
+The definitions used were:
+
+ * WHO-SARI - Fever **and** Cough.
+ * WHO-SARI (adapted) - Fever **or** Cough.
+ * IMOVE-SARI - Any of fever, malaise, headache, myalgia, confusion or dizziness **and** any of cough, sore throat or shortness of breath. 
+ NB This is the closest possible to the actual IMOVE definition given the availability of symptom data.
+ 
+### Counts and percentages of episodes meeting the definitions
+
+Note that episodes can be captured under multiple definitions. 
+ 
+```{r sari_defs_count}
+sari_defs_count <- sari_data %>%
+  select(age_grp, who_sari, who_sari_adapted, imove_sari, none) %>%
+  group_by(age_grp) %>%
+  summarise(across(everything(), list(
+    count = ~ sum(.x == TRUE, na.rm = TRUE),
+    pct = ~ sum(.x == TRUE, na.rm = TRUE) / n()
+  ))) %>%
+  ungroup() %>%
+  pivot_longer(
+    cols = -age_grp,
+    names_to = c("Definition", ".value"),
+    names_pattern = "(.+?)_(count|pct)$"
+  ) %>%
+  bind_rows(mutate(., age_grp = "All") %>%
+    group_by(Definition, age_grp) %>%
+    summarise(across(count, sum, na.rm = TRUE)) %>%
+    mutate(pct = count / nrow(sari_data)))
+
+sari_defs_count %>%
+  mutate(value = str_glue("{count}\n({percent(pct, accuracy = 0.1)})")) %>%
+  pivot_wider(
+    id_cols = Definition,
+    names_from = age_grp,
+    values_from = value
+  ) %>%
+  gt::gt()
+```
+ 
+### Venn Diagram of definitions
+
+There is significant overlap between the definitions. The Venn diagram below is for all ages.
+ 
+```{r sari_venn_create}
+if (!exists("sari_venn")) {
+  sari_venn <- ggVennDiagram::ggVennDiagram(list(
+    "WHO" = filter(sari_data, who_sari) %>% pull(hosp_id2),
+    "WHO-adapted" = filter(sari_data, who_sari_adapted) %>% pull(hosp_id2),
+    "IMOVE" = filter(sari_data, imove_sari) %>% pull(hosp_id2),
+    "None" = filter(sari_data, none) %>% pull(hosp_id2)
+  )) +
+    scale_fill_viridis_c(direction = -1, option = "cividis")
+}
+```
+
+```{r sari_venn, out.width = '80%'}
+sari_venn
+```
+
+## Time trend
+
+The trend of episodes matching each of the definitions is fairly consistent across time.
+
+```{r sari_def_time_trend}
+sari_data %>%
+  select(admitdate, who_sari, who_sari_adapted, imove_sari, none) %>%
+  pivot_longer(
+    cols = -admitdate,
+    names_to = "sari_def"
+  ) %>%
+  filter(value == TRUE) %>%
+  ggplot(aes(x = admitdate, colour = sari_def)) +
+  geom_freqpoly(binwidth = 7) +
+  scale_x_date("Admission date\n(ISO week)",
+    breaks = seq.Date(min(sari_data$admitdate) %>%
+      floor_date(unit = "month"),
+    max(sari_data$admitdate) %>%
+      ceiling_date(unit = "month"),
+    length.out = 15
+    ),
+    labels = function(breaks) {
+      str_glue("{month(breaks, label = T)}\n({str_pad(isoweek(breaks), width = 2, pad = 0)})")
+    }
+  ) +
+  scale_colour_brewer("SARI definition", palette = "Paired") +
+  theme_minimal()
+```
+
+## Symptoms by definition
+
+Note that Cough and Fever have been excluded as they feature in every definition.
+
+```{r symptoms_per_def}
+sari_data %>%
+  select(who_sari, who_sari_adapted, imove_sari, none, abdopain:vomit, -cough, -fever) %>%
+  pivot_longer(
+    cols = c(who_sari:none),
+    names_to = "sari_def"
+  ) %>%
+  filter(value == TRUE) %>%
+  pivot_longer(
+    cols = c(abdopain:vomit),
+    names_to = "symptom",
+    values_to = "symptom_val"
+  ) %>%
+  filter(symptom_val == 1) %>%
+  ggplot(aes(y = symptom, fill = sari_def)) +
+  scale_fill_brewer("SARI definition", palette = "Paired") +
+  geom_bar(position = "dodge") +
+  ylab("Symptom") +
+  xlab("Episode count") +
+  theme_minimal() +
+  theme(legend.position = "top")
+```
+
+If we look exclusively at the episodes which don't fit any definition. Split by gender there doesn't seem to be any significant differences across the age groups, note the very large confidence intervals because of small numbers.
+
+```{r none_age_sex_table}
+sari_data %>%
+  filter(none) %>% 
+  count(sex, age_grp, name = "count") %>% 
+  group_by(age_grp) %>% 
+  mutate(total = sum(count)) %>% 
+  bind_rows(mutate(., age_grp = "All") %>%
+    group_by(sex, age_grp) %>%
+    summarise(across(count, sum, na.rm = TRUE)) %>%
+    mutate(total = nrow(sari_data %>% filter(none)))) %>% 
+  rowwise() %>%
+  mutate(tst = list(broom::tidy(prop.test(count, total, conf.level = 0.95)))) %>%
+  tidyr::unnest(tst) %>%
+  select(sex, age_grp, count, pct = estimate, conf.low, conf.high) %>% 
+  mutate(value = str_glue("{count}\n({percent(conf.low, accuracy = 0.1)}-{percent(conf.high, accuracy = 0.1)})")) %>%
+  pivot_wider(
+    id_cols = sex,
+    names_from = age_grp,
+    values_from = value,
+    values_fill = "0"
+  ) %>%
+  gt::gt()
+```
+
+```{r none_symptoms_age, warning = FALSE}
+sari_data %>%
+  filter(none) %>%
+  select(age_grp, abdopain:vomit, -cough, -fever) %>%
+  mutate(age_grp = if_else(age_grp %in% c("0-")))
+  pivot_longer(
+    cols = c(abdopain:vomit),
+    names_to = "symptom",
+    values_to = "symptom_val"
+  ) %>%
+  filter(symptom_val == 1) %>%
+  group_by(age_grp, symptom) %>%
+  summarise(count = n()) %>%
+  ungroup() %>%
+  group_by(age_grp) %>%
+  mutate(total = sum(count)) %>%
+  rowwise() %>%
+  mutate(tst = list(broom::tidy(prop.test(count, total, conf.level = 0.95)))) %>%
+  tidyr::unnest(tst) %>%
+  select(age_grp, pct = estimate, symptom, conf.low, conf.high) %>%
+  ggplot(aes(x = age_grp, y = pct, fill = symptom)) +
+  scale_fill_brewer("Symptom", palette = "Paired") +
+  scale_y_continuous(
+    limits = c(0, 1),
+    labels = percent
+  ) +
+  geom_col(position = "dodge") +
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high), position = "dodge", colour = "grey50", alpha = 0.5) +
+  ylab("Percentage of episodes\nwith symptom") +
+  xlab("Age Group") +
+  theme_minimal() +
+  theme(legend.position = "top")
+```
+
+In the younger age groups the numbers are too small to draw any conclusions, however in the older age groups confusion and malaise become more prevalent, and to a lesser extent abdominal pain, diarrhoea, and vomiting.
+
+Some of the issues with small numbers could possibly be resolved by using different age groupings.

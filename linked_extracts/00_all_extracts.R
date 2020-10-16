@@ -53,6 +53,10 @@ if (file_exists(rapid_data_local)) {
 # Get the SMR01 data
 source("extract-data/03_extract_smr01_data.R")
 
+# NRS data --------------------------------------------------------------
+# Get the Deaths data
+source("extract-data/04_extract_nrs_deaths_data.R")
+
 
 # SICSAG data --------------------------------------------------------------
 # Get the ICU data
@@ -75,43 +79,7 @@ if (ncol(sicsag) == 1) stop("Probable error with sicsag file (try swapping betwe
 write_rds(sicsag, path(here("data", str_glue("SICSAG_extract.rds"))), compress = "gz")
 
 
-# NRS data --------------------------------------------------------------
-# Get the Deaths data
 
-# Define the database connection with SMRA
-if (!exists("SMRA_connect")) {
-  SMRA_connect <- dbConnect(odbc(),
-    dsn = "SMRA",
-    uid = .rs.askForPassword("SMRA Username:"),
-    pwd = .rs.askForPassword("SMRA Password:")
-  )
-}
-
-
-start_date <- c("'2020-01-01'")
-
-# Define SQL query
-Query_NRS <- paste(
-  "select chi, date_of_death, underlying_cause_of_death, ",
-  "cause_of_death_code_0, cause_of_death_code_1, cause_of_death_code_2, ",
-  "cause_of_death_code_3, cause_of_death_code_4, cause_of_death_code_5, ",
-  "cause_of_death_code_6, cause_of_death_code_7, cause_of_death_code_8, ",
-  "cause_of_death_code_9 ",
-  "from ANALYSIS.GRO_DEATHS_C",
-  "where date_of_death >= to_date(", start_date, ",'yyyy-MM-dd')",
-  "ORDER BY chi, date_of_death"
-)
-
-# Extract data from database using SQL query above
-NRS <- dbGetQuery(SMRA_connect, Query_NRS) %>%
-  as_tibble() %>%
-  rename(chi_number = CHI)
-
-# set to lower case
-names(NRS) <- tolower(names(NRS))
-
-# write extract
-write_rds(NRS, path(here("data", str_glue("NRS_extract.rds"))), compress = "gz")
 
 
 # Clean up old local data -------------------------------------------------------

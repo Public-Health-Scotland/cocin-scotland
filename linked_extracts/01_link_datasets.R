@@ -1,5 +1,4 @@
 source("extract-data/00_setup-environment.R")
-source("linked_extracts/00_all_extracts.R")
 
 # Read in RAPID data
 
@@ -20,22 +19,23 @@ rapid_data <- rapid_data %>%
 ### Create Linkages
 
 # COCIN (also includes all RAPID data)
-source("ad-hoc-analysis/linkage_cocin.R")
+source("linked_extracts/linkage_prep/linkage_cocin.R")
 
 # SICSAG
-source("ad-hoc-analysis/linkage_sicsag.R")
+source("linked_extracts/linkage_prep/linkage_sicsag.R")
 
 # SMR01
-source("ad-hoc-analysis/linkage_smr01_rapid.R")
+source("linked_extracts/linkage_prep/linkage_smr01_rapid.R")
 
 # NRS
-source("ad-hoc-analysis/linkage_nrs.R")
+source("linked_extracts/linkage_prep/linkage_nrs.R")
 
 ### Link on all datasets
 data <- list(rapid_cocin, rapid_icu, rapid_prevhosp, rapid_deaths) %>%
   reduce(left_join, by = c("chi_number", "adm_date"))
 
 # write dataset
+# TODO add date to file path
 write_rds(data, path(here("data", "Linked_Dataset.rds")),
   compress = "gz"
 )
@@ -43,17 +43,4 @@ write_rds(data, path(here("data", "Linked_Dataset.rds")),
 # remove datasets not required
 rm(rapid_data, rapid_cocin, rapid_deaths, rapid_icu, rapid_prevhosp)
 
-### IMOVE Recode
-source("ad-hoc-analysis/IMOVE_Recode.R")
 
-# write dataset
-write_rds(IMOVE_data, path(here("data", "IMOVE_data.rds")),
-  compress = "gz"
-)
-
-### Genomics Recode
-source("ad-hoc-analysis/Genomics_Recode.R")
-
-write_rds(genomics_hospdata, path(here("data", str_glue("Genomics_hospdata.rds"))),
-  compress = "gz"
-)

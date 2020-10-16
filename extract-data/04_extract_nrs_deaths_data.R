@@ -5,10 +5,11 @@ source("extract-data/00_setup-environment.R")
 
 # Define the database connection with SMRA
 if (!exists("SMRA_connect")) {
-  SMRA_connect <- dbConnect(odbc(),
+  SMRA_connect <- odbc::dbConnect(
+    drv = odbc::odbc(),
     dsn = "SMRA",
-    uid = .rs.askForPassword("SMRA Username:"),
-    pwd = .rs.askForPassword("SMRA Password:")
+    uid = rstudioapi::showPrompt(title = "Username", message = "Username:"),
+    pwd = rstudioapi::askForPassword("SMRA Password:")
   )
 }
 

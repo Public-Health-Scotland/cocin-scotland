@@ -57,6 +57,9 @@ source("extract-data/03_extract_smr01_data.R")
 # Get the Deaths data
 source("extract-data/04_extract_nrs_deaths_data.R")
 
+# Clear database connection
+odbc::dbDisconnect(SMRA_connect)
+rm(SMRA_connect)
 
 # SICSAG data --------------------------------------------------------------
 # Get the ICU data

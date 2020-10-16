@@ -10,7 +10,7 @@ source("extract-data/00_setup-environment.R")
 if (floor_date(today(), "week") > floor_date(ymd_hm(latest_extract_date()), "week")) {
   message("Data is from a previous week - getting new extract")
   source("extract-data/01_get-scottish-cocin-data.R")
-  source("extract-data/02_clean-cocin-data.R")
+  source("clean-data/clean_cocin_data.R")
 }
 
 # Copy to server

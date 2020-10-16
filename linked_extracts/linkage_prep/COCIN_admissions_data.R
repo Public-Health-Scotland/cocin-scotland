@@ -2,9 +2,7 @@ source("extract-data/00_setup-environment.R")
 
 # Create COCIN admissions
 
-cocin <- read_rds(path(server_dir, str_glue("{date}_cocin-clean-data.rds",
-  date = latest_server_data("cocin")
-)))
+cocin <- read_rds(path(server_dir, str_glue("{today()}_cocin_extract_clean.rds")))
 
 #########################################################
 #################### STUDY IDENTIFIERS ##################

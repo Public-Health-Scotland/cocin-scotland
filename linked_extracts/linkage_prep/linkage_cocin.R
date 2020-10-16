@@ -1,7 +1,7 @@
 source("extract-data/00_setup-environment.R")
 
 # Create/Update COCIN admissions
-source("ad-hoc-analysis/COCIN_admissions_data.R")
+source("linked_extracts/linkage_prep/COCIN_admissions_data.R")
 
 ##############################
 ######### JOIN BY CHI ########

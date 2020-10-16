@@ -6,28 +6,28 @@ source("extract-data/00_setup-environment.R", echo = TRUE)
 
 # COCIN data ------------------------------------------------------------
 
-# Note it will extract maximum once a week
-if (floor_date(today(), "week") > floor_date(ymd_hm(latest_extract_date()), "week")) {
+# Note it will extract maximum once a day
+if (today() > date(ymd_hm(latest_local_cocin_date()))) {
   message("Data is from a previous week - getting new extract")
   source("extract-data/01_get-scottish-cocin-data.R", echo = TRUE)
   source("clean-data/clean_cocin_data.R", echo = TRUE)
 }
 
 # Copy to server
-cocin_data_local <- path(here("data", str_glue("{latest_local_cocin_date()}_scot-data-clean.rds")))
-cocin_metadata_local <- path(here("data", str_glue("{date(latest_local_cocin_date())}_COCIN-metadata.csv")))
+cocin_data_local <- path(here("data", str_glue("{today()}_cocin_extract_clean.rds")))
+cocin_metadata_local <- path(here("data", str_glue("{today()}_cocin_metadata.csv")))
 
 if (file_exists(cocin_data_local)) {
   file_copy(
     path = cocin_data_local,
-    new_path = path(server_dir, str_glue("{date(latest_local_cocin_date())}_cocin-clean-data.rds"))
+    new_path = path(server_dir, str_glue("{today()}_cocin_extract_clean.rds"))
   )
 
   # Include COCIN metadata
   if (file_exists(cocin_metadata_local)) {
     file_copy(
       path = cocin_metadata_local,
-      new_path = path(server_dir, str_glue("{date(latest_local_cocin_date())}_cocin-metadata.csv"))
+      new_path = path(server_dir, str_glue("{today()}_cocin_metadata.csv"))
     )
   }
 }
@@ -38,13 +38,13 @@ source("extract-data/02_read_RAPID_data.R", echo = TRUE)
 source("clean-data/clean_RAPID_data.R", echo = TRUE)
 
 # Copy to server
-rapid_data_local <- path(here("data", str_glue("{date(latest_local_cocin_date())}_RAPID-cleaned-filtered.rds")))
+rapid_data_local <- path(here("data", str_glue("{today()}_RAPID-cleaned-filtered.rds")))
 
 
 if (file_exists(rapid_data_local)) {
   file_copy(
     path = rapid_data_local,
-    new_path = path(server_dir, str_glue("{date(latest_local_cocin_date())}_RAPID-cleaned-filtered.rds"))
+    new_path = path(server_dir, str_glue("{today()}_RAPID-cleaned-filtered.rds"))
   )
 }
 

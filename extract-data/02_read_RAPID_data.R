@@ -5,10 +5,7 @@ source("extract-data/00_setup-environment.R")
 
 # Set correct filepath for server or desktop
 linked_file_path <- path(
-  if_else(version$platform == "x86_64-pc-linux-gnu",
-          "/conf",
-          "//stats"
-  ),
+  stats_server_path(),
   "PHSCOVID19_Analysis", "RAPID Reporting", "Daily_extracts", "rapid_ecoss_joined.rds"
 )
 
@@ -39,10 +36,10 @@ if (vpn_active()) {
       ))
     }
   } else {
-    message("File 'rapid_ecoss_joined.rds' does not exist - contact Bob Taylor")
+    stop("File 'rapid_ecoss_joined.rds' does not exist - contact Bob Taylor")
   }
 } else {
-  message("Not connected to NHS network so can't check for new file")
+  stop("Not connected to NHS network so can't check for new file")
 }
 
 rm(linked_file_path, local_last_modified, server_last_modified)

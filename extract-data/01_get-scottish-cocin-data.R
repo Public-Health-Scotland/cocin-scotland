@@ -56,10 +56,6 @@ extract <- redcap_read(
 )$data %>%
   as_tibble()
 
-
-# Record extract time
-extract_date <- Sys.time()
-
 # Fix bad location codes
 extract %<>%
   fix_bad_loc_codes()
@@ -115,10 +111,7 @@ rm(data)
 # Data extract
 write_rds(
   extract,
-  here("data", str_glue(
-    "{date}_scot-data.rds",
-    date = format(extract_date, "%Y-%m-%d_%H-%M")
-  )),
+  here("data", str_glue("{today()}_cocin_extract.rds")),
   compress = "gz"
 )
 
@@ -126,10 +119,7 @@ write_rds(
 write_csv(
   extract %>%
     dplyr::count(hb_name, redcap_data_access_group, hospid, location_name),
-  here("data", str_glue(
-    "{date}_scot-record-summary.csv",
-    date = format(extract_date, "%Y-%m-%d_%H-%M")
-  ))
+  here("data", str_glue("{today()}_cocin_summary.csv"))
 )
 
 # Write current metadata for reference
@@ -137,9 +127,9 @@ redcap_metadata_read(
   redcap_uri = "https://ncov.medsci.ox.ac.uk/api/",
   token = Sys.getenv("ccp_token")
 )$data %>%
-  write_csv(here("data", str_glue("{today()}_COCIN_metadata.csv")))
+  write_csv(here("data", str_glue("{today()}_cocin_metadata.csv")))
 
-rm(scot_locations, extract, extract_date)
+rm(scot_locations, extract)
 
 
 ### END OF SCRIPT ###

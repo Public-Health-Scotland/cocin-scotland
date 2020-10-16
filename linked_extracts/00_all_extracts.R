@@ -63,26 +63,7 @@ rm(SMRA_connect)
 
 # SICSAG data --------------------------------------------------------------
 # Get the ICU data
-
-# Set correct filepath for server or desktop
-sicsag_file_path <- path(
-  if_else(version$platform == "x86_64-pc-linux-gnu",
-    "/conf",
-    "//stats"
-  ),
-  "PHSCOVID19_Analysis", "RAPID Reporting", "Daily_extracts", "ICU Linkage files",
-  "File for PHS.csv"
-)
-
-# Read in data
-sicsag <- read_tsv(sicsag_file_path)
-if (ncol(sicsag) == 1) stop("Probable error with sicsag file (try swapping between read_csv and read_tsv")
-
-# write extract
-write_rds(sicsag, path(here("data", str_glue("SICSAG_extract.rds"))), compress = "gz")
-
-
-
+source("extract-data/05_read_sicsag_icu_data.R")
 
 
 # Clean up old local data -------------------------------------------------------

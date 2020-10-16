@@ -39,3 +39,6 @@ names(nrs_extract) <- tolower(names(nrs_extract))
 # write extract
 # TODO add date to filename
 write_rds(nrs_extract, path(here("data", str_glue("NRS_extract.rds"))), compress = "gz")
+
+# Clean up
+rm(start_date, nrs_sql_query, nrs_extract)

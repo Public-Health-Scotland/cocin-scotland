@@ -35,3 +35,6 @@ names(smr01_extract) <- tolower(names(smr01_extract))
 # write extract
 # TODO add extract date to file name
 write_rds(smr01_extract, path(here("data", str_glue("SMR01_extract.rds"))), compress = "gz")
+
+# Clean up
+rm(start_date, smr01_sql_query, smr01_extract)

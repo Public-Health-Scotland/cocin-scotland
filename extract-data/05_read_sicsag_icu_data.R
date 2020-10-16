@@ -17,4 +17,7 @@ if (ncol(sicsag_data) == 1) stop("Probable error with sicsag file (try swapping 
 
 # write extract
 # TODO add date to file path
-write_rds(sicsag, path(here("data", str_glue("SICSAG_extract.rds"))), compress = "gz")
+write_rds(sicsag_data, path(here("data", str_glue("SICSAG_extract.rds"))), compress = "gz")
+
+# Clean up
+rm(sicsag_file_path, sicsag_data)

@@ -105,7 +105,7 @@ extract %<>%
 ### 3 - Run factor/label code ----
 
 data <- extract
-source("extract-data/CCPUKSARI_R_2020-03-04_1532.R")
+source("extract-data/01a_cocin_factors.R")
 extract <- data
 rm(data)
 

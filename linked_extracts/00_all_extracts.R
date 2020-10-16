@@ -14,19 +14,20 @@ if (floor_date(today(), "week") > floor_date(ymd_hm(latest_extract_date()), "wee
 }
 
 # Copy to server
-cocin_data_local <- path(here("data", str_glue("{latest_extract_date()}_scot-data-clean.rds")))
-cocin_metadata_local <- path(here("data", str_glue("{date(latest_extract_date())}_COCIN-metadata.csv")))
+cocin_data_local <- path(here("data", str_glue("{latest_local_cocin_date()}_scot-data-clean.rds")))
+cocin_metadata_local <- path(here("data", str_glue("{date(latest_local_cocin_date())}_COCIN-metadata.csv")))
 
 if (file_exists(cocin_data_local)) {
   file_copy(
     path = cocin_data_local,
-    new_path = path(server_dir, str_glue("{date(latest_extract_date())}_cocin-clean-data.rds"))
+    new_path = path(server_dir, str_glue("{date(latest_local_cocin_date())}_cocin-clean-data.rds"))
   )
 
+  # Include COCIN metadata
   if (file_exists(cocin_metadata_local)) {
     file_copy(
       path = cocin_metadata_local,
-      new_path = path(server_dir, str_glue("{date(latest_extract_date())}_cocin-metadata.csv"))
+      new_path = path(server_dir, str_glue("{date(latest_local_cocin_date())}_cocin-metadata.csv"))
     )
   }
 }
@@ -37,13 +38,13 @@ source("extract-data/03_read_RAPID_data.R")
 source("ad-hoc-analysis/tidy_RAPID_data.R")
 
 # Copy to server
-rapid_data_local <- path(here("data", str_glue("{date(latest_extract_date())}_RAPID-cleaned-filtered.rds")))
+rapid_data_local <- path(here("data", str_glue("{date(latest_local_cocin_date())}_RAPID-cleaned-filtered.rds")))
 
 
 if (file_exists(rapid_data_local)) {
   file_copy(
     path = rapid_data_local,
-    new_path = path(server_dir, str_glue("{date(latest_extract_date())}_RAPID-cleaned-filtered.rds"))
+    new_path = path(server_dir, str_glue("{date(latest_local_cocin_date())}_RAPID-cleaned-filtered.rds"))
   )
 }
 

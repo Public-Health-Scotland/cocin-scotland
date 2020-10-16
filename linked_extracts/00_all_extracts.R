@@ -34,8 +34,8 @@ if (file_exists(cocin_data_local)) {
 
 # RAPID data --------------------------------------------------------------
 # Get the RAPID data
-source("extract-data/03_read_RAPID_data.R")
-source("ad-hoc-analysis/tidy_RAPID_data.R")
+source("extract-data/02_read_RAPID_data.R")
+source("clean-data/clean_RAPID_data.R")
 
 # Copy to server
 rapid_data_local <- path(here("data", str_glue("{date(latest_local_cocin_date())}_RAPID-cleaned-filtered.rds")))

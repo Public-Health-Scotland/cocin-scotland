@@ -51,37 +51,8 @@ if (file_exists(rapid_data_local)) {
 
 # SMR01 data --------------------------------------------------------------
 # Get the SMR01 data
+source("extract-data/03_extract_smr01_data.R")
 
-# Define the database connection with SMRA
-if (!exists("SMRA_connect")) {
-  SMRA_connect <- dbConnect(odbc(),
-    dsn = "SMRA",
-    uid = .rs.askForPassword("SMRA Username:"),
-    pwd = .rs.askForPassword("SMRA Password:")
-  )
-}
-
-# Start Date of extract
-start_date <- c("'2019-01-01'")
-
-# Define SQL query
-Query_SMR01 <- paste(
-  "select upi_number, link_no, cis_marker, admission_date, ",
-  "discharge_date ",
-  "from SMR01_PI",
-  "where discharge_date >= to_date(", start_date, ",'yyyy-MM-dd')",
-  "ORDER BY upi_number, link_no, cis_marker, admission_date, discharge_date, admission, discharge, uri"
-)
-
-# Extract data from database using SQL query above
-SMR01 <- dbGetQuery(SMRA_connect, Query_SMR01) %>%
-  as_tibble()
-
-# set to lower case
-names(SMR01) <- tolower(names(SMR01))
-
-# write extract
-write_rds(SMR01, path(here("data", str_glue("SMR01_extract.rds"))), compress = "gz")
 
 # SICSAG data --------------------------------------------------------------
 # Get the ICU data

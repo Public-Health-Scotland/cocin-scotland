@@ -14,7 +14,10 @@ source("extract-data/00_setup-environment.R")
 
 if (!exists("sari_data")) {
   latest_data <- dir_info(path(server_dir, "..", "final_data")) %>%
-    filter(birth_time == max(birth_time, na.rm = TRUE)) %>%
+    filter(str_detect(basename(path), "IMOVE"),
+           str_detect(basename(path), "Anon", negate = TRUE)) %>% 
+    arrange(desc(birth_time)) %>%
+    filter(row_number() == 1) %>% 
     pull(path)
 
   message(str_glue("Using file {basename(latest_data)}"))
@@ -176,9 +179,11 @@ sari_data %>%
   theme(legend.position = "top")
 ```
 
+### Episodes meeting none of the definitions
+
 If we look exclusively at the episodes which don't fit any definition. Split by gender there doesn't seem to be any significant differences across the age groups, note the very large confidence intervals because of small numbers.
 
-```{r none_age_sex_table}
+```{r none_age_sex_table, warning = FALSE}
 sari_data %>%
   filter(none) %>% 
   count(sex, age_grp, name = "count") %>% 
@@ -202,11 +207,42 @@ sari_data %>%
   gt::gt()
 ```
 
+Looking at symptoms, confusion is the symptom most likely to be displayed by someone COVID +ve and not otherwise meeting any SARI definition.
+
+```{r symptoms_none}
+none <- sari_data %>%
+  select(none, abdopain:vomit, -cough, -fever) %>%
+  pivot_longer(
+    cols = c(none),
+    names_to = "sari_def"
+  ) %>%
+  filter(value == TRUE) %>%
+  pivot_longer(
+    cols = c(abdopain:vomit),
+    names_to = "symptom",
+    values_to = "symptom_val"
+  ) %>%
+  filter(symptom_val == 1)
+
+none_levels <- none %>% count(symptom, sort = T) %>% pull(symptom) 
+
+none %>% 
+  ggplot(aes(y = factor(symptom, levels = none_levels))) +
+  geom_bar(position = "dodge") +
+  ylab("Symptom") +
+  xlab("Episode count") +
+  theme_minimal() +
+  theme(legend.position = "top")
+```
+
+In the younger age groups the numbers are too small to draw any conclusions, however in the older age groups confusion and malaise become more prevalent, and to a lesser extent abdominal pain, diarrhoea, and vomiting.
+
+Some of the issues with small numbers could possibly be resolved by using different age groupings.
+
 ```{r none_symptoms_age, warning = FALSE}
 sari_data %>%
   filter(none) %>%
   select(age_grp, abdopain:vomit, -cough, -fever) %>%
-  mutate(age_grp = if_else(age_grp %in% c("0-")))
   pivot_longer(
     cols = c(abdopain:vomit),
     names_to = "symptom",
@@ -222,7 +258,7 @@ sari_data %>%
   mutate(tst = list(broom::tidy(prop.test(count, total, conf.level = 0.95)))) %>%
   tidyr::unnest(tst) %>%
   select(age_grp, pct = estimate, symptom, conf.low, conf.high) %>%
-  ggplot(aes(x = age_grp, y = pct, fill = symptom)) +
+  ggplot(aes(x = age_grp, y = pct, fill = factor(symptom, levels = none_levels))) +
   scale_fill_brewer("Symptom", palette = "Paired") +
   scale_y_continuous(
     limits = c(0, 1),
@@ -236,6 +272,4 @@ sari_data %>%
   theme(legend.position = "top")
 ```
 
-In the younger age groups the numbers are too small to draw any conclusions, however in the older age groups confusion and malaise become more prevalent, and to a lesser extent abdominal pain, diarrhoea, and vomiting.
 
-Some of the issues with small numbers could possibly be resolved by using different age groupings.

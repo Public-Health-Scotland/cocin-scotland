@@ -1,0 +1,344 @@
+---
+title: "iMove checks"
+author: "James McMahon"
+date: "13/08/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+# source("extract-data/00_setup-environment.R")
+library(gt)
+library(scales)
+
+latest_data <- dir_info(path(server_dir, "..", "final_data")) %>% 
+  filter(birth_time == max(birth_time, na.rm = TRUE)) %>% 
+  pull(path)
+
+message(str_glue("Using file {basename(latest_data)}"))
+
+imove_clean <- read_rds(latest_data) %>%
+  as_tibble() %>%
+  
+  # Add iso weeks and years
+  mutate(across(where(is.Date), list(
+    week = lubridate::isoweek,
+    year = lubridate::isoyear
+  ))) %>%
+
+  # Days between symptom and swab
+  mutate(swabdelay = time_length(onsetdate %--% swabdate, "days")) %>%
+  
+  # Days between symptom onset and admission
+  mutate(nosoc = time_length(onsetdate %--% admitdate, "days")) %>%
+
+  # Creating a variable for presence of any chronic disease
+  mutate(anychron = grepl(1, paste(liverdis, diabetes, heartdis, cancer, immuno, lungdis, rendis, dement, stroke, rheumat, anaemia, tuberc, asplenia, asthma, hypert, neuromusc, obese), fixed = TRUE)) %>%
+
+  # Create age groups
+  mutate(agegp = case_when(
+    between(age_y, 0, 14) ~ 1L,
+    between(age_y, 15, 49) ~ 2L,
+    between(age_y, 50, 59) ~ 3L,
+    between(age_y, 60, 69) ~ 4L,
+    between(age_y, 70, 79) ~ 5L,
+    between(age_y, 80, 89) ~ 6L,
+    age_y >= 90 ~ 7L,
+    TRUE ~ NA_integer_
+  ))
+
+q1 <- function(x, ...) quantile(x, 0.25, ...)
+q3 <- function(x, ...) quantile(x, 0.75, ...)
+
+n_lower_outliers <- function(x, ...) {
+  x <- x[!is.na(x)]
+  length(x[x < q1(x, ...)])
+}
+
+n_upper_outliers <- function(x, ...) {
+  x <- x[!is.na(x)]
+  length(x[x > q3(x, ...)])
+}
+
+n_missing <- function(x, ...) {
+  sum(is.na(x), ...)
+}
+```
+
+## Summary Checks
+
+### Numeric checks
+
+```{r numeric_checks}
+imove_clean %>%
+  select(where(is.numeric)) %>%
+  summarise(across(everything(), list(
+    missing = n_missing,
+    min = min,
+    max = max,
+    mean = mean,
+    q1 = q1,
+    median = median,
+    q3 = q3,
+    sd = sd,
+    lowoutlier = n_lower_outliers,
+    highoutlier = n_upper_outliers
+  ),
+  na.rm = TRUE
+  )) %>%
+  pivot_longer(everything(),
+    names_to = c("var", ".value"),
+    names_pattern = "^(.+?(?:_.+?)?(?:_.+?)?(?:_.+?)?)_(\\w+?)$"
+  ) %>%
+  gt()
+```
+
+### Date checks
+
+```{r date_checks}
+imove_clean %>%
+  select(where(is.Date)) %>%
+  summarise(across(everything(), list(
+    missing = n_missing,
+    min = min,
+    max = max,
+    mean = mean,
+    median = median
+  ),
+  na.rm = TRUE
+  )) %>%
+  pivot_longer(everything(),
+    names_to = c("var", ".value"),
+    names_pattern = "^(.+?(?:_.+?)?(?:_.+?)?(?:_.+?)?)_(\\w+?)$"
+  ) %>%
+  gt()
+```
+
+
+
+## Check covid case definitions
+
+* Check not meeting case definition (=0)
+* Check missing
+
+```{r covid}
+
+```
+
+## Check all records have sex
+
+**`r nrow(imove_clean) - sum(imove_clean$sex %in% c(0, 1))`** rows have missing sex (`r percent(1 - (sum(imove_clean$sex %in% c(0, 1)) / nrow(imove_clean)))`)
+
+```{r sex}
+imove_clean %>%
+  count(sex) %>%
+  gt()
+```
+
+## Check pregnancy
+
+### Male pregnancy
+
+Checking if any men are pregnant, have trimester or are post-partum.
+
+```{r pregnant_male}
+pregnant_male <- imove_clean %>%
+  filter(
+    sex == 1,
+    pregnant == 1 | trimester != 8 | postpartum == 1
+  ) %>%
+  select(anon_id, pregnant, trimester, postpartum)
+
+pregnant_male
+```
+
+Issues with **`r nrow(pregnant_male)`** records.
+
+### Incorrect female pregnancy
+
+Check for women who are pregnant and aged under 16 or over 50. Clearly not impossible.
+
+```{r pregnant_female}
+pregnant_female <- imove_clean %>%
+  filter(
+    sex == 0,
+    pregnant == 1,
+    age_y < 15 | age_y > 50
+  ) %>%
+  select(anon_id, age_y, pregnant, trimester, postpartum) %>%
+  arrange(age_y)
+
+pregnant_female
+```
+
+Possible issues with **`r nrow(pregnant_female)`** records.
+
+
+## Check sari case definitions
+
+* Check not meeting case definition (=0)
+* Check missing
+
+```{r sari}
+
+```
+
+## Check missing symptoms
+
+Needs more work - need to do sari case definition and look for missing symptoms
+
+```{r missing_sympt}
+imove_clean <- imove_clean %>%
+  mutate(
+    resp_symptom = case_when(
+      cough == 1 | sorethroat == 1 | sob == 1 ~ 1L,
+      TRUE ~ 0L
+    ),
+    systemic_symptom = case_when(
+      fever == 1 | malaise == 1 | headache == 1 | myalgia == 1 | general_deter == 1 ~ 1L,
+      TRUE ~ 0L
+    ),
+    resp_covsymptom = case_when(
+      cough == 1 | sorethroat == 1 | sob == 1 | coryza == 1 | tach == 1 ~ 1L,
+      TRUE ~ 0L
+    ),
+    systemic_covsymptom = case_when(
+      fever == 1 | chills == 1 | malaise == 1 | headache == 1 | myalgia == 1 | dermato == 1 | confusion == 1 | dizzy == 1 | general_deter == 1 ~ 1L,
+      TRUE ~ 0L
+    ),
+    abdo_covsymptom = case_when(
+      vomit == 1 | diarr == 1 | nausea == 1 | abdopain == 1 ~ 1L,
+      TRUE ~ 0L
+    ),
+    other_covsymptom = case_when(
+      anosmia == 1 | ageusia == 1 | chest == 1 | palp == 1 | conjunct == 1 ~ 1L,
+      TRUE ~ 0L
+    )
+  )
+```
+
+## Check consent
+
+This variable isn't in our data. Should it all be 1?
+
+## Check antivirals
+
+Don't have `antivir` variable
+
+## Missing lab results
+
+**`r imove_clean %>% filter(covid == 1, is.na(lab_covid)) %>% nrow()`** rows have positive COVID but no lab result (likely diagnosis data as COVID lab confirmed but no linked ECOSS record)
+
+## Check age
+
+**`r imove_clean %>% filter(is.na(age_y) & is.na(age_m)) %>% nrow()`** rows have missing ages. 
+**`r imove_clean %>% filter(age_y < 0 | age_m < 0) %>% nrow()`** rows have negative ages. 
+
+**`r imove_clean %>% filter(age_y > 105) %>% nrow()`** rows have an age > 105.
+
+```{r age_hist}
+ggplot(imove_clean, aes(x = age_y, fill = sex)) +
+  geom_histogram(binwidth = 1) +
+  theme_minimal() +
+  scale_fill_brewer("Sex", palette = 3) +
+  xlab("Age in years")
+```
+
+## Los checks
+
+### Provided Los
+**`r imove_clean %>% filter(los_hosp == time_length(admitdate %--% dischargedate, "days")) %>% nrow()`** rows have a provided hospital length of stay which is equal to the derived (days between admission and discharge dates).
+
+**`r imove_clean %>% filter(los_icu == time_length(icuadmitdate %--% icudisdate, "days")) %>% nrow()`** rows have a provided ICU length of stay which is equal to the derived.
+
+
+### Negative Los
+**`r imove_clean %>% filter(los_hosp < 0) %>% nrow()`** rows have a negative provided hospital length of stay. 
+
+**`r imove_clean %>% filter(los_icu < 0) %>% nrow()`** rows have a negative provided ICU length of stay. 
+
+**`r imove_clean %>% filter(time_length(admitdate %--% dischargedate, "days") < 0) %>% nrow()`** rows have a negative derived hospital length of stay. 
+
+**`r imove_clean %>% filter(time_length(icuadmitdate %--% icudisdate, "days") < 0) %>% nrow()`** rows have a negative derived ICU length of stay. 
+
+
+### Extensive Los
+**`r imove_clean %>% filter(los_hosp > 60) %>% nrow()`** rows have a provided hospital length of stay greater than 60 days. 
+
+**`r imove_clean %>% filter(los_icu > 60) %>% nrow()`** rows have a provided ICU length of stay greater than 60 days.
+
+**`r imove_clean %>% filter(time_length(admitdate %--% dischargedate, "days") > 60) %>% nrow()`** rows have a derived hospital length of stay greater than 60 days.
+
+**`r imove_clean %>% filter(time_length(icuadmitdate %--% icudisdate, "days") > 60) %>% nrow()`** rows have a derived ICU length of stay greater than 60 days.
+
+## ICU admission
+
+**`r imove_clean %>% filter(is.na(icuadmitdate), icu == 1) %>% nrow()`** rows have a no ICU dates but are flagged with an ICU admission.
+
+**`r imove_clean %>% filter(!is.na(icuadmitdate), icu == 0) %>% nrow()`** rows have a ICU dates but are flagged as having no ICU admission.
+
+## Outcomes
+
+### Deaths
+
+**`r imove_clean %>% filter(is.na(deathdate), outcome == 1) %>% nrow()`** rows have no death-date but are flagged deceased.
+
+**`r imove_clean %>% filter(!is.na(deathdate), outcome != 1 , !is.na(outcome)) %>% nrow()`** rows have a death-date but are not flagged as deceased.
+
+**`r imove_clean %>% filter(!is.na(deathdate), is.na(outcome)) %>% nrow()`** rows have a death-date but have no outcome.
+
+### Discharges
+
+**`r imove_clean %>% filter(!is.na(dischargedate), outcome == 1) %>% nrow()`** rows have a discharge-date and are marked as deceased. - This seems like it is OK to me?
+
+**`r imove_clean %>% filter(!is.na(dischargedate), is.na(outcome)) %>% nrow()`** rows have a discharge-date but have no outcome.
+
+**`r imove_clean %>% filter(!is.na(dischargedate), outcome == 3) %>% nrow()`** rows have a discharge-date but are flagged as still hospitalised.
+
+## GP visits
+We don't have the ***healthcare_contact*** variable
+
+## Time to between swab and onset
+```{r swab_delay}
+max_swab_delay <- max(imove_clean$swabdelay, na.rm = TRUE)
+max2_swab_delay <- filter(imove_clean, swabdelay != max_swab_delay) %>% pull(swabdelay) %>%  max()
+```
+The longest time from symptom onset to swab is: `r max_swab_delay` days with onset date:`r imove_clean$onsetdate[which(imove_clean$swabdelay == max_swab_delay)]`, swab date: `r imove_clean$swabdate[which(imove_clean$swabdelay == max_swab_delay)]` and admission date: `r imove_clean$admitdate[which(imove_clean$swabdelay == max_swab_delay)]`
+The second longest time is: `r max2_swab_delay` days with onset date:`r imove_clean$onsetdate[which(imove_clean$swabdelay == max2_swab_delay)]`, swab date: `r imove_clean$swabdate[which(imove_clean$swabdelay == max2_swab_delay)]` and admission date: `r imove_clean$admitdate[which(imove_clean$swabdelay == max2_swab_delay)]`
+
+```{r swab_delay_freq_poly}
+ggplot(imove_clean %>% filter(swabdelay <= max2_swab_delay), aes(swabdelay)) +
+  geom_freqpoly(binwidth = 1) +
+  theme_minimal() +
+  scale_x_continuous(breaks = seq(signif(min(imove_clean$swabdelay, na.rm = TRUE), 1) - 10, signif(max2_swab_delay, 1), by = 10) + 10) +
+  ggtitle("swabdelay = time in days from symptom onset date to swab date")
+```
+ 
+**`r imove_clean %>% filter(swabdelay < 0) %>% nrow()`** rows have a negative `swabdelay` (swabbed before symptom onset).
+
+**`r imove_clean %>% filter(swabdelay > 21) %>% nrow()`** rows have `swabdelay` greater than 21 days.
+
+## Time to between onset and admission
+
+**`r imove_clean %>% filter(nosoc < 0) %>% nrow()`** rows have a negative `nosoc` (i.e. they were admitted before their symptoms started indicating a nosocomial infection).
+
+**`r imove_clean %>% filter(nosoc < -7) %>% nrow()`** rows have a onset > 7 days ***after*** admission.
+
+**`r imove_clean %>% filter(nosoc < -90) %>% nrow()`** rows have a onset > 90 days ***after*** admission.
+
+**`r imove_clean %>% filter(nosoc > 60) %>% nrow()`** (of these `r imove_clean %>% filter(nosoc > 60, readm) %>% nrow()` rows have a onset > 60 days ***before*** admission.
+
+
+
+## Other dates
+
+### Admissions before 15 March
+
+### Inconsistent dates
+
+### Dates outside of expected period
+
+### All missing dates
+
+## Chronic Conditions

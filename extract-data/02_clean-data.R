@@ -95,12 +95,8 @@ scot_data %<>%
 
     # Calculate days between onset and admission
     onset2admission = (hostdat - cestdat) %>%
-      as.numeric() %>%
-      ff_label("Onset to admission (days)")
+      as.numeric()
   )
-
-# Restore label to hostdat otherwise case_when fails for different types
-label(scot_data$hostdat) <- "Admission date to facility"
 
 # Age
 scot_data %<>%
@@ -128,8 +124,7 @@ scot_data %<>%
     ),
 
     # Where DOB missing, use age_estimateyears
-    age = ifelse(is.na(agedat), age_estimateyears, age) %>%
-      ff_label("Age on admission (years)"),
+    age = ifelse(is.na(agedat), age_estimateyears, age),
 
     age.factor = dplyr::case_when(
       age < 10 ~ "<10",
@@ -363,5 +358,5 @@ write_rds(
   compress = "gz"
 )
 
-
+rm(scot_data)
 ### END OF SCRIPT ###

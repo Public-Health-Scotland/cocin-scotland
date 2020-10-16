@@ -21,14 +21,6 @@ if (!require(lubridate)) {
   install.packages("lubridate")
   library(lubridate)
 }
-if (!require(finalfit)) {
-  install.packages("finalfit")
-  library(finalfit)
-}
-if (!require(Hmisc)) {
-  install.packages("Hmisc")
-  library(Hmisc)
-}
 if (!require(tidylog)) {
   install.packages("tidylog")
   library(tidylog)
@@ -72,6 +64,14 @@ if (!require(remotes)) {
 if (!require(phsmethods)) {
   remotes::install_github("Health-SocialCare-Scotland/phsmethods")
   library(phsmethods)
+}
+if (!require(odbc)) {
+  install.packages("odbc")
+  library(odbc)
+}
+if (!require(openssl)) {
+  install.packages("openssl")
+  library(openssl)
 }
 
 

@@ -12,13 +12,7 @@ knitr::opts_chunk$set(echo = FALSE)
 library(gt)
 library(scales)
 
-latest_data <- dir_info(path(server_dir, "..", "final_data")) %>% 
-  filter(birth_time == max(birth_time, na.rm = TRUE)) %>% 
-  pull(path)
-
-message(str_glue("Using file {basename(latest_data)}"))
-
-imove_clean <- read_rds(latest_data) %>%
+imove_clean <- read_rds(path(here("data", "IMOVE_data.rds"))) %>%
   as_tibble() %>%
   
   # Add iso weeks and years
@@ -148,7 +142,7 @@ pregnant_male <- imove_clean %>%
     sex == 1,
     pregnant == 1 | trimester != 8 | postpartum == 1
   ) %>%
-  select(anon_id, pregnant, trimester, postpartum)
+  select(hosp_id2, pregnant, trimester, postpartum)
 
 pregnant_male
 ```
@@ -166,7 +160,7 @@ pregnant_female <- imove_clean %>%
     pregnant == 1,
     age_y < 15 | age_y > 50
   ) %>%
-  select(anon_id, age_y, pregnant, trimester, postpartum) %>%
+  select(hosp_id2, age_y, pregnant, trimester, postpartum) %>%
   arrange(age_y)
 
 pregnant_female
@@ -327,7 +321,7 @@ ggplot(imove_clean %>% filter(swabdelay <= max2_swab_delay), aes(swabdelay)) +
 
 **`r imove_clean %>% filter(nosoc < -90) %>% nrow()`** rows have a onset > 90 days ***after*** admission.
 
-**`r imove_clean %>% filter(nosoc > 60) %>% nrow()`** (of these `r imove_clean %>% filter(nosoc > 60, readm) %>% nrow()` rows have a onset > 60 days ***before*** admission.
+**`r imove_clean %>% filter(nosoc > 60) %>% nrow()`** (of these `r imove_clean %>% filter(nosoc > 60) %>% nrow()` rows have a onset > 60 days ***before*** admission.
 
 
 

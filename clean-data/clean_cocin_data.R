@@ -18,14 +18,11 @@ source("extract-data/00_setup-environment.R")
 
 
 ### 1 - Read in data ----
+cocin_extract_path <- here("data", str_glue("{today()}_cocin_extract.rds"))
 
+if (!file_exists(cocin_extract_path)) stop("Need to run get a new COCIN extract for today first")
 scot_data <-
-  read_rds(
-    here(
-      "data",
-      str_glue("{latest_extract_date()}_scot-data.rds")
-    )
-  )
+  read_rds(cocin_extract_path)
 
 
 ### 2 - Fix RedCap variables ----
@@ -349,12 +346,7 @@ scot_data %<>%
 
 write_rds(
   scot_data,
-  here(
-    "data",
-    str_glue(
-      "{latest_extract_date()}_scot-data-clean.rds"
-    )
-  ),
+  here("data", str_glue("{today()}_cocin_extract_clean.rds")),
   compress = "gz"
 )
 

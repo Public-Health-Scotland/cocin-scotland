@@ -1,7 +1,7 @@
 source("extract-data/00_setup-environment.R")
 
 # Read COCIN data
-cocin_with_chi <- read_rds(path(server_dir, str_glue("{date}_cocin-clean-data.rds", date = latest_server_data("cocin")))) %>%
+cocin_with_chi <- read_rds(path(server_dir, str_glue("{today()}_cocin_extract_clean.rds"))) %>%
   select(subjid, nhs_chi, hostdat, dsstdtc) %>%
   mutate_at(vars(hostdat, dsstdtc), as_date) %>%
   group_by(subjid) %>%
@@ -532,11 +532,9 @@ ggplot2::ggplot(covid_admissions) +
 
 rm(cocin_match, coded_as_covid, rapid_cocin_filtered, test_before_stay, test_in_stay, reason_levels)
 
-rapid_date <- file_info(path(here("data"), "rapid_ecoss_joined.rds")) %>%
-  pull(modification_time) %>%
-  date()
+
 write_rds(covid_admissions,
-  path(here("data", str_glue("{rapid_date}_RAPID-cleaned-filtered.rds"))),
+  path(here("data", str_glue("{today()}_RAPID-cleaned-filtered.rds"))),
   compress = "gz"
 )
 

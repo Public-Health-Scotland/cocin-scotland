@@ -30,10 +30,19 @@ data <- list(rapid_cocin, rapid_icu, rapid_prevhosp, rapid_deaths) %>%
   reduce(left_join, by = c("chi_number", "adm_date"))
 
 # write dataset
-# TODO add date to file path
-write_rds(data, path(here("data", "Linked_Dataset.rds")),
+write_rds(data, path(here("output", str_glue("Linked_Dataset_{today()}.rds"))),
   compress = "gz"
 )
+
+# Copy to server
+linked_data_local <- path(here("output", str_glue("Linked_Dataset_{today()}.rds")))
+
+if (file_exists(linked_data_local)) {
+  file_copy(
+    path = linked_data_local,
+    new_path = path(server_dir_final, str_glue("Linked_Dataset_{today()}.rds"))
+  )
+}
 
 # remove datasets not required
 rm(rapid_data, rapid_cocin, rapid_deaths, rapid_icu, rapid_prevhosp)

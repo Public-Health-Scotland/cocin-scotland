@@ -1,7 +1,7 @@
 source("extract-data/00_setup-environment.R")
 
 # Read in SMR01 extract
-SMR01 <- read_rds(path(here("data", str_glue("SMR01_extract.rds"))))
+SMR01 <- read_rds(path(server_dir, str_glue("{today()}_SMR01_extract.rds")))
 
 # Prepare data for matching
 SMR01 <- SMR01 %>%

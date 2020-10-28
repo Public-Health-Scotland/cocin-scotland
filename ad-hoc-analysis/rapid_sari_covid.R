@@ -1,6 +1,5 @@
 # Read in the RAPID file and select variables we need
 rapid <- read_rds(here("data", "rapid_ecoss_joined.rds")) %>%
-  sample_n(1000) %>% 
   select(
     chi_number,
     rapid_id,

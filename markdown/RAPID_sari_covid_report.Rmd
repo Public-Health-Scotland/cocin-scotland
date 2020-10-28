@@ -1,0 +1,83 @@
+---
+title: "RAPID - SARI (ICD10) vs COVID test"
+author: "James McMahon"
+date: "28/10/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, fig.fullwidth = TRUE)
+```
+
+This analysis looks for ICD10 codes in RAPID, these codes are grouped into 'types' detailed below. 
+
+***Note***: The test result does not necessarily relate to the episode, test result is from ECOSS and is the first positive test or the latest negative test - where the test did not occur 2 days after or 28 days before admission this has been set to 'No test'. This was done for simplicity.
+
+See the [WHO ICD-10 lookup](https://icd.who.int/browse10/2016/en) for more info. Note that I always search for all sub-codes so R00 mentioned below will search for R00.0 R00.1 etc. as well as all dagger / asterisks variants.
+
+`any_symptoms` looks for any codes R00 - R69
+
+`sari_codes` is a collection of codes provided by Diogo (I'm currently trying to find the original source, but they seem reasonable): `r sari_codes %>% str_sub(end = 3) %>% unique() %>% sort()`
+
+`sari_symptoms` are the symptom codes (R..) from `sari_codes` above:  `r sari_symptoms %>% str_sub(end = 3) %>% unique() %>% sort()`
+
+`J_codes` are J09 - J22, these were the codes used in the [German SARI surviellance paper](https://bmcpublichealth.biomedcentral.com/articles/10.1186/s12889-017-4515-1)
+
+## Table of data
+```{r data_table}
+data %>%
+  group_by(code_type, ECOSS_covid) %>%
+  summarise(
+    n = sum(n)
+  ) %>%
+  ungroup() %>%
+  pivot_wider(names_from = ECOSS_covid, values_from = n) %>%
+  adorn_totals(where = c("row", "col")) %>%
+  mutate(Total = if_else(code_type == "Total", NA_real_, Total)) %>%
+  gt::gt()
+```
+
+## Plots
+
+Ideally any set of codes searched for would have a relatively large proportion of positive cases and a relatively low proportion of 'No tests', given the assumption that tests are performed because of a clinical suspicion. 
+
+### All RAPID
+```{r}
+plot_n_all
+```
+
+### Excluding episodes with no diagnosis codes
+```{r}
+plot_n_ex_all
+```
+
+### Percentage of test status for each category
+```{r}
+plot_pct_all
+```
+
+
+### All RAPID - by age group and sex
+```{r fig.width=10, fig.height=6}
+plot_n_all_facet
+```
+
+### Excluding episodes with no diagnosis codes - by age group and sex
+```{r fig.width=10, fig.height=6}
+plot_n_ex_all_facet
+```
+
+### Percentage of test status for each category - by age group and sex
+```{r fig.width=10, fig.height=6}
+plot_pct_facet
+```
+
+
+## Trend over time
+
+This links our 'COVID dataset' to give a count of admissions per week and compares this to all RAPID admissions in that week with various codes.
+
+```{r fig.width=10, fig.height=6}
+trend_admissions
+```
+

@@ -1,7 +1,7 @@
 source("extract-data/00_setup-environment.R")
 
-# Read in SMR01 extract
-NRS <- read_rds(path(here("data", str_glue("NRS_extract.rds"))))
+# Read in NRS extract
+NRS <- read_rds(path(server_dir, str_glue("{today()}_NRS_extract.rds")))
 
 # Check whether patient in RAPID data has died and DOD
 deaths <- NRS %>%

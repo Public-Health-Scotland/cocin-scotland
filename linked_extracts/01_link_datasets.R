@@ -13,6 +13,9 @@ rapid_data <- read_rds(path(here(
 # COCIN (also includes all RAPID data)
 source("linked_extracts/linkage_prep/linkage_cocin.R", echo = TRUE)
 
+# Co-morbid Conditions (LTCs) - improve COCIN coverage
+source("linked_extracts/linkage_prep/ltc_data.R", echo = TRUE)
+
 # SICSAG
 source("linked_extracts/linkage_prep/linkage_sicsag.R", echo = TRUE)
 
@@ -34,5 +37,3 @@ write_rds(data, path(here("data", "Linked_Dataset.rds")),
 
 # remove datasets not required
 rm(rapid_data, rapid_cocin, rapid_deaths, rapid_icu, rapid_prevhosp)
-
-

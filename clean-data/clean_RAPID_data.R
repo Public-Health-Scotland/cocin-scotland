@@ -533,6 +533,13 @@ ggplot2::ggplot(covid_admissions) +
 
 rm(cocin_match, coded_as_covid, rapid_cocin_filtered, test_before_stay, test_in_stay, reason_levels)
 
+# Output a list of CHI numbers for the PIS extract
+write_csv(
+  covid_admissions %>%
+    distinct(chi_number) %>%
+    arrange(chi_number),
+  path(server_dir, str_glue("{today()}_covid_linked_CHI_list.csv"))
+)
 
 write_rds(covid_admissions,
   path(here("data", str_glue("{today()}_RAPID-cleaned-filtered.rds"))),

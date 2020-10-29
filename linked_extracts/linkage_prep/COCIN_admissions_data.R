@@ -2,7 +2,10 @@ source("extract-data/00_setup-environment.R")
 
 # Create COCIN admissions
 
-cocin <- read_rds(path(server_dir, str_glue("{today()}_cocin_extract_clean.rds")))
+cocin <- read_rds(path(
+  server_dir,
+  str_glue("{today()}_cocin_extract_clean.rds")
+))
 
 #########################################################
 #################### STUDY IDENTIFIERS ##################
@@ -49,8 +52,10 @@ hospitalward <- cocin %>%
 patientchar <- cocin %>%
   group_by(subjid) %>%
   mutate(
-    age_y = case_when(age_estimateyearsu == "Years" ~ first(na.omit(age_estimateyears))),
-    age_m = case_when(age_estimateyearsu == "Months" ~ first(na.omit(age_estimateyears)))
+    age_y = case_when(age_estimateyearsu == "Years" ~
+    first(na.omit(age_estimateyears))),
+    age_m = case_when(age_estimateyearsu == "Months" ~
+    first(na.omit(age_estimateyears)))
   ) %>%
   summarise(
     # Include CHI for linkage
@@ -113,8 +118,8 @@ caseseverity_ind <- cocin %>%
     ventilation = case_when(
       any(invasive_proccur == "YES") ~ "Invasive",
       any(noninvasive_proccur == "YES") ~ "NonInvasive",
-      # Commented this out as definitions of high-flow oxygen are different (2l/min v
-      # 6l/min)
+      # Commented this out as definitions of high-flow
+      # oxygen are different (2l/min v 6l/min)
       any(oxygenhf_cmoccur == "1") ~ "Oxygen (high-flow)",
       any(extracorp_prtrt == "YES") ~ "ECMO",
       # Specify if patient has had none of the above treatments

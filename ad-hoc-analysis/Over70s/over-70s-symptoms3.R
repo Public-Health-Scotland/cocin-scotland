@@ -375,7 +375,7 @@ tbl_clusters <- cluster_data %>%
 
 # Plots -------------------------------------------------------------------
 
-plt_Significant_symptoms <- symptom_data %>%
+plt_significant_symptoms <- symptom_data %>%
   # Status a factor ordered by levels == Yes value
   mutate(
     Symptom = factor(Symptom, symp_data_levels_order),

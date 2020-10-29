@@ -1,11 +1,11 @@
-## Over 70s analysis 
+## Over 70s analysis
 ## 08/05/2020
 ## Nicole Jarvie
 
-## Run after 00-Get Scottish Data & 01-Prep data 
-## Add age band 
+## Run after 00-Get Scottish Data & 01-Prep data
+## Add age band
 ## Still need to add in code to analysis any symptom differences between those patients admitted
-## Before and after the 30th of april 
+## Before and after the 30th of april
 
 
 scot_data <- scot_data %>%
@@ -81,16 +81,16 @@ pop_data <- scot_data %>%
 
 age_summary <- pop_data %>%
   group_by(age) %>%
-  summarise(total_cases = n()) 
+  summarise(total_cases = n())
 
 admission_data <- pop_data %>%
-  filter(age %in% c("70-79","80+"))  %>% 
-  ##filter(admission <= today() ) %>%
+  filter(age %in% c("70-79", "80+")) %>%
+  ## filter(admission <= today() ) %>%
   mutate(
     admissionweek =
       case_when(
         admission < "2020-04-30" ~ "Before 30April",
-        admission >=  "2020-04-06" ~ "On or After 30April",
+        admission >= "2020-04-06" ~ "On or After 30April",
         is.na(admission) ~ NA_character_,
         TRUE ~ "NA"
       )
@@ -100,17 +100,16 @@ admission_data <- pop_data %>%
 
 
 
-over70s <- pop_data %>% 
-  filter(age %in% c("70-79","80+") ) %>%
+over70s <- pop_data %>%
+  filter(age %in% c("70-79", "80+")) %>%
   mutate(
     admissionweek =
       case_when(
         admission < "2020-04-30" ~ "Before 30April",
-        admission >=  "2020-04-06" ~ "On or After 30April",
-          is.na(admission) ~ NA_character_,
+        admission >= "2020-04-06" ~ "On or After 30April",
+        is.na(admission) ~ NA_character_,
         TRUE ~ "NA"
       )
-    ) %>%
-    group_by(admissionweek,age) %>%
-    summarise(total_cases = n())
-
+  ) %>%
+  group_by(admissionweek, age) %>%
+  summarise(total_cases = n())

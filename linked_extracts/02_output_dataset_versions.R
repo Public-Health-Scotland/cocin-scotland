@@ -3,8 +3,7 @@ source("linked_extracts/output_recode/IMOVE_Recode.R")
 
 # write dataset
 write_rds(IMOVE_data, path(here("output", str_glue("IMOVE_data_{today()}.rds"))),
-          compress = "gz"
-)
+          compress = "gz")
 
 # Copy to server
 imove_data_local <- path(here("output", str_glue("IMOVE_data_{today()}.rds")))
@@ -25,8 +24,7 @@ rstudioapi::viewer("linked_extracts/check_linked_data.html")
 source("linked_extracts/output_recode/Genomics_Recode.R")
 
 write_rds(genomics_hospdata, path(here("output", str_glue("Genomics_hospdata_{today()}.rds"))),
-          compress = "gz"
-)
+          compress = "gz")
 
 # Copy to server
 genomics_data_local <- path(here("output", str_glue("Genomics_hospdata_{today()}.rds")))

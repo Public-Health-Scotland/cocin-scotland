@@ -1,4 +1,4 @@
-###-###-###-###-###-###-###-###-###-###-###-###-###-###-###
+### -###-###-###-###-###-###-###-###-###-###-###-###-###-###
 ## Codename - sum_totals.R                               ##
 ## Version - 0.8
 ## Data Release - Annual Inpatient/Daycase Information   ##
@@ -20,7 +20,7 @@
 ##              vars = c("stays","los"),                 ##
 ##              groups = c("hb","age"))                  ##
 ##                                                       ##
-###-###-###-###-###-###-###-###-###-###-###-###-###-###-###
+### -###-###-###-###-###-###-###-###-###-###-###-###-###-###
 
 ### Documentation ----
 #' Sum values by group with totals
@@ -40,34 +40,34 @@
 #'
 #' # na.rm can be used to exclude NAs from the summing variables
 #' starwars %>%
-#'   sum_totals("mass", "homeworld", na.rm=TRUE)
+#'   sum_totals("mass", "homeworld", na.rm = TRUE)
 #'
 #' # Multiple grouping and summing variables can be specified.
 #' # In such cases, all possible subtotals are also calculated.
 #' starwars %>%
-#'   sum_totals(c("mass","height"), c("homeworld","species","gender"), na.rm=TRUE)
+#'   sum_totals(c("mass", "height"), c("homeworld", "species", "gender"), na.rm = TRUE)
 #'
 #' # Including a new variable name in the summing variable will add
 #' # a count with that name
 #' starwars %>%
-#'   sum_totals(c("n_char","mass","height"), c("homeworld","species","gender"), na.rm=TRUE)
+#'   sum_totals(c("n_char", "mass", "height"), c("homeworld", "species", "gender"), na.rm = TRUE)
 #' @export
 
 ### Function definition ----
-sum_totals <- function(x, vars, groups, na.rm=FALSE) {
-
+sum_totals <- function(x, vars, groups, na.rm = FALSE) {
   `%>%` <- magrittr::`%>%`
 
   # If any variables in vars don't exist, create them and set them to 1
-  for (newvar in vars[!(vars %in% names(x))])
+  for (newvar in vars[!(vars %in% names(x))]) {
     x <- dplyr::mutate(x, !!newvar := 1)
+  }
 
   # Convert grouping variables to character (so that "Total" can be added)
   x <- dplyr::mutate_at(x, groups, as.character)
 
   # Initial count over all groups
   z <- dplyr::group_by_at(x, groups) %>%
-    dplyr::summarise_at(vars, sum, na.rm=na.rm) %>%
+    dplyr::summarise_at(vars, sum, na.rm = na.rm) %>%
     dplyr::ungroup()
 
   # For each grouping variable (one at a time):
@@ -78,14 +78,14 @@ sum_totals <- function(x, vars, groups, na.rm=FALSE) {
     z <- z %>%
       dplyr::mutate(!!cat := "Total") %>%
       dplyr::group_by_at(groups) %>%
-      dplyr::summarise_at(vars, sum, na.rm=na.rm) %>%
+      dplyr::summarise_at(vars, sum, na.rm = na.rm) %>%
       dplyr::ungroup() %>%
       dplyr::bind_rows(z)
   }
 
   # Put rows into correct order (totals first)
   z <- z %>%
-    dplyr::mutate_at(groups, list(sorter = ~ifelse(.=="Total","",.))) %>%
+    dplyr::mutate_at(groups, list(sorter = ~ ifelse(. == "Total", "", .))) %>%
     dplyr::arrange_at(vars(tidyselect::ends_with("sorter"))) %>%
     dplyr::select(-tidyselect::ends_with("sorter"))
 

@@ -1,10 +1,10 @@
 source("extract-data/00_setup-environment.R")
 
 # Read in NRS extract
-NRS <- read_rds(path(server_dir, str_glue("{today()}_NRS_extract.rds")))
+nrs <- read_rds(path(server_dir, str_glue("{today()}_NRS_extract.rds")))
 
 # Check whether patient in RAPID data has died and DOD
-deaths <- NRS %>%
+deaths <- nrs %>%
   # Remove invalid (mostly missing) CHIs
   filter(chi_check(chi_number) == "Valid CHI") %>%
   # Filter deaths to only chis which appear in RAPID
@@ -22,4 +22,4 @@ rapid_deaths <- rapid_data %>%
   select(chi_number, adm_date, death, date_of_death, covid_death) %>%
   replace_na(list(death = "No", covid_death = "No"))
 
-rm(NRS, deaths)
+rm(nrs, deaths)

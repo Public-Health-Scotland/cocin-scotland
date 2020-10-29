@@ -15,24 +15,24 @@ if (vpn_active()) {
   if (file_exists(linked_file_path)) {
     server_last_modified <- file_info(linked_file_path) %>%
       pull(modification_time)
-    
+
     local_last_modified <- file_info("data/rapid_ecoss_joined.rds") %>%
       pull(modification_time)
-    
+
     # If the server version is newer (or the local copy doesn't exist) copy it accross
     if (date(server_last_modified) > date(local_last_modified) | is.na(local_last_modified)) {
       message(str_glue("The server file looks newer (modified:{server_date}), so replacing local file (modified:{local_date})",
-                       server_date = date(server_last_modified),
-                       local_date = date(local_last_modified)
+        server_date = date(server_last_modified),
+        local_date = date(local_last_modified)
       ))
       file_copy(linked_file_path, "data/rapid_ecoss_joined.rds", overwrite = TRUE)
-      
+
       local_last_modified <- server_last_modified
-      
+
       message("New file coppied")
     } else {
       message(str_glue("Local file is current (modified:{local_date})",
-                       local_date = date(local_last_modified)
+        local_date = date(local_last_modified)
       ))
     }
   } else {

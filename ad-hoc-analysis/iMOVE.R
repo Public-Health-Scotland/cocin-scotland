@@ -110,20 +110,6 @@ patientchar <- scot_data %>%
     hcw = first(na.omit(healthwork_erterm))
   )
 
-## Disease information
-## Commenting out for now
-
-## diseaseinfo <- scot_data %>%
-## group_by(subjid) %>%
-## mutate(outcome = case_when(any(dsterm == "Death") ~ "Death",
-##                             any(dsterm == "Discharged alive") ~ "Alive"),
-##     deathdate = case_when(any(dsterm =="Death") ~ dsstdtc)) %>%
-## summarise(
-## outcome = first(na.omit(outcome)),
-## deathdate = first(na.omit(deathdate))
-## )
-
-
 ## Case/Severity Information
 
 caseseverity <- scot_data %>%

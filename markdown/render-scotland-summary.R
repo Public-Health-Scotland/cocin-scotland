@@ -22,9 +22,12 @@ source("extract-data/00_setup-environment.R")
 rmarkdown::render(
   input = here("markdown", "scotland-summary.Rmd"),
   output_file = here(
-    "output", 
-    paste0(str_sub(latest_extract_date(), 1, 10),
-           "_scotland-summary.docx"))
+    "output",
+    paste0(
+      str_sub(latest_extract_date(), 1, 10),
+      "_scotland-summary.docx"
+    )
+  )
 )
 
 

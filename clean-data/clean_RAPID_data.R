@@ -72,8 +72,9 @@ rapid <- read_rds(here("data", "rapid_ecoss_joined.rds")) %>%
       )
   ) %>%
   # Drop any invalid CHIs
-  mutate(chi_number = if_else(chi_check(chi_number) == "Valid CHI", chi_number, NA_character_)) %>%
-  # Replace missing gender (should use a phsmethods function for this)
+  filter(chi_check(chi_number) == "Valid CHI") %>%
+  # Replace missing gender
+  # TODO use a phsmethods function for this)
   mutate(patient_gender_description = case_when(
     !is.na(patient_gender_description) ~ patient_gender_description,
     # If the CHI is missing use sex from ECOSS

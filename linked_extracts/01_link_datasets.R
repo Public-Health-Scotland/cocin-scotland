@@ -3,13 +3,10 @@ source("extract-data/00_setup-environment.R")
 # Read in RAPID data
 
 # Read in RAPID data
-rapid_data <- read_rds(path(here("data", str_glue("{today()}_RAPID-cleaned-filtered.rds"))))
-
-# read in RAPID data
-# rapid_data <- read_rds("data/2020-08-23_RAPID-cleaned-filtered.rds")
-
-rapid_data <- rapid_data %>%
-  filter(!is.na(chi_number))
+rapid_data <- read_rds(path(here(
+  "data",
+  str_glue("{today()}_RAPID-cleaned-filtered.rds")
+)))
 
 ### Create Linkages
 

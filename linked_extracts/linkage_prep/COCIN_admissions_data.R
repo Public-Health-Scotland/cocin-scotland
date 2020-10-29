@@ -155,6 +155,34 @@ rkexamlab <- cocin %>%
     bloodgroup = first(na.omit(bloodgroup))
   )
 
+# alt_mp = daily_alt_lborres
+# ast_mp = daily_ast_lborres
+#
+# bloodurea_mp = daily_bun_lborres = case_when(daily_bun_lborresu == 1 ~ daily_bun_lborres,
+#                                            daily_bun_lborresu == 2 ~ daily_bun_lborres * 0.357) # http://unitslab.com/node/98
+# bpdia_mp = admission_diabp_vsorres, diastolic_vsorres
+# bpsys_mp = sysbp_vsorres, systolic_vsorres
+# cpk_mp = daily_cpk_lbyn_2
+# crp_mp = daily_crp_lborres = case_when(daily_crp_lborresu == 1 ~ daily_crp_lborres, #mg/L
+#                                            daily_crp_lborresu == 2 ~ daily_crp_lborres * 10,#mg/dL
+#                                      daily_crp_lborresu == 3 ~ daily_crp_lborres) #ug/mL
+# ferritin_mp = daily_ferr_lborres = case_when(daily_ferr_lborresu == 1 ~ daily_ferr_lborres, #ug/L
+#                                            daily_ferr_lborresu == 2 ~ daily_ferr_lborres) #ng/mL
+# hba1c_mp = daily_hba1c_lborres = case_when(daily_hba1c_lborresu == 1 ~ daily_hba1c_lborres, #%
+#                                            daily_hba1c_lborresu == 2 ~ (daily_hba1c_lborres / 10.929) + 2.15) #mmol/mol - https://www.diabetes.co.uk/hba1c-units-converter.html
+#
+# heartrate_mp = hr_vsorres, daily_rr
+# ldh_mp = daily_ldh_lborres
+# lft_bili_mp = daily_bil_lborres = case_when(daily_bil_lborresu == 1 ~ daily_bil_lborres * 0.585, #umol/L - http://unitslab.com/node/37
+#                                            daily_bil_lborresu == 2 ~ daily_bil_lborres) #mg/dL
+#
+#
+#
+#
+# lymphoc_mp = daily_lymp_lborres = case_when()
+# neutro_mp
+# plat_mp
+# resprate_mp = rr_vsorres,
 
 #########################################################
 ########## UNDERLYING CHRONIC CONDITIONS ################

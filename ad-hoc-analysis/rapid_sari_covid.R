@@ -1,3 +1,5 @@
+source("extract-data/00_setup-environment.R", echo = TRUE)
+
 # Read in the RAPID file and select variables we need
 rapid <- read_rds(here("data", "rapid_ecoss_joined.rds")) %>%
   select(

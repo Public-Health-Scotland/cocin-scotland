@@ -37,8 +37,17 @@ nrs_extract <- dbGetQuery(SMRA_connect, nrs_sql_query) %>%
 names(nrs_extract) <- tolower(names(nrs_extract))
 
 # write extract
-# TODO add date to filename
-write_rds(nrs_extract, path(here("data", str_glue("NRS_extract.rds"))), compress = "gz")
+write_rds(nrs_extract, path(here("data", str_glue("{today()}_NRS_extract.rds"))), compress = "gz")
+
+# Copy to server
+nrs_data_local <- path(here("data", str_glue("{today()}_NRS_extract.rds")))
+
+if (file_exists(nrs_data_local)) {
+  file_copy(
+    path = nrs_data_local,
+    new_path = path(server_dir, str_glue("{today()}_NRS_extract.rds"))
+  )
+}
 
 # Clean up
 rm(start_date, nrs_sql_query, nrs_extract)

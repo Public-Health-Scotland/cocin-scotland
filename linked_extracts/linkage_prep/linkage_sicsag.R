@@ -1,7 +1,7 @@
 source("extract-data/00_setup-environment.R")
 
-# Read in SMR01 extract
-sicsag_extract <- read_rds(path(here("data", str_glue("SICSAG_extract.rds"))))
+# Read in SICSAG extract
+sicsag_extract <- read_rds(path(server_dir, str_glue("{today()}_SICSAG_extract.rds")))
 
 # Prepare data for matching - create ICU 'stays'
 icu <- sicsag_extract %>%

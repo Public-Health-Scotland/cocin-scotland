@@ -25,8 +25,36 @@ IMOVE_data_anon <- IMOVE_data_anon %>%
 # IMOVE_data_anon <- IMOVE_data_anon %>%
 #   filter(!is.na(onsetdate))
 
-write_rds(IMOVE_data_anon, here("data", str_glue("IMOVE_data_{today()}_Anon.rds")), compress = "gz")
-haven::write_dta(IMOVE_data_anon, here("data", str_glue("IMOVE_data_{today()}_Anon.dta")), version = 15)
-write_csv(IMOVE_data_anon, here("data", str_glue("IMOVE_data_{today()}_Anon.csv")))
+write_rds(IMOVE_data_anon, here("output", str_glue("IMOVE_data_{today()}_Anon.rds")), compress = "gz")
+haven::write_dta(IMOVE_data_anon, here("output", str_glue("IMOVE_data_{today()}_Anon.dta")), version = 15)
+write_csv(IMOVE_data_anon, here("output", str_glue("IMOVE_data_{today()}_Anon.csv")))
 
-test <- read_rds(here("data", str_glue("IMOVE_data_{today()}_Anon.rds")))
+# Copy to server
+imove_anon_local_1 <- path(here("output", str_glue("IMOVE_data_{today()}_Anon.rds")))
+
+if (file_exists(imove_anon_local_1)) {
+  file_copy(
+    path = imove_anon_local_1,
+    new_path = path(server_dir_final, str_glue("IMOVE_data_{today()}_Anon.rds"))
+  )
+}
+
+
+imove_anon_local_2 <- path(here("output", str_glue("IMOVE_data_{today()}_Anon.dta")))
+
+if (file_exists(imove_anon_local_2)) {
+  file_copy(
+    path = imove_anon_local_2,
+    new_path = path(server_dir_final, str_glue("IMOVE_data_{today()}_Anon.dta"))
+  )
+}
+
+
+imove_anon_local_3 <- path(here("output", str_glue("IMOVE_data_{today()}_Anon.csv")))
+
+if (file_exists(imove_anon_local_3)) {
+  file_copy(
+    path = imove_anon_local_3,
+    new_path = path(server_dir_final, str_glue("IMOVE_data_{today()}_Anon.csv"))
+  )
+}

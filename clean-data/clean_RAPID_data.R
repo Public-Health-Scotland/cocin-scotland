@@ -542,4 +542,4 @@ write_rds(covid_admissions,
   compress = "gz"
 )
 
-rm(rapid_date, covid_admissions)
+rm(covid_admissions)

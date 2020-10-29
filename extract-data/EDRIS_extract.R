@@ -22,19 +22,19 @@ Sys.setenv(
     )
 )
 
-# Call API allowing for up to 5 tries 
+# Call API allowing for up to 5 tries
 tries <- 0
 extract <- NA
 
 ## Note - need to come off the VPN connection for the below (Rserver works though)
 while (tries == 0 | (tries < 5 & inherits(extract, "try-error"))) {
-  
+
   # Avoid using the API on the hour as this is when a lot of reports refresh
   while (minute(Sys.time()) %in% c(59, 0:5)) {
     message("Waiting till after the hour to avoid overloading the API")
     Sys.sleep(30)
   }
-  
+
   print(tries)
   extract <- try(extract <- redcap_read(
     redcap_uri = "https://ncov.medsci.ox.ac.uk/api/",
@@ -86,24 +86,24 @@ extract %<>%
   left_join(scot_locations, by = c("hospid" = "location"))
 
 valid_scotpat <- extract %>%
-  group_by(subjid) %>% 
-  summarise(nhs_chi = first(na.omit(nhs_chi))) %>% 
-  filter(chi_check(nhs_chi) == "Valid CHI") %>% 
+  group_by(subjid) %>%
+  summarise(nhs_chi = first(na.omit(nhs_chi))) %>%
+  filter(chi_check(nhs_chi) == "Valid CHI") %>%
   pull(subjid)
 
-# Call API allowing for up to 5 tries 
+# Call API allowing for up to 5 tries
 tries <- 0
 extract <- NA
 
-## Note - need to come off the VPN connection for the below 
+## Note - need to come off the VPN connection for the below
 while (tries == 0 | (tries < 5 & inherits(extract, "try-error"))) {
-  
+
   # Avoid using the API on the hour as this is when a lot of reports refresh
   while (minute(Sys.time()) %in% c(59, 0:5)) {
     message("Waiting till after the hour to avoid overloading the API")
     Sys.sleep(30)
   }
-  
+
   print(tries)
   extract <- redcap_read(
     redcap_uri = "https://ncov.medsci.ox.ac.uk/api/",
@@ -120,10 +120,12 @@ extract_date <- Sys.time()
 
 # Fix bad location codes
 extract %<>%
-  mutate(subjid = str_replace(subjid, "S341H(-\\d+)$", "S314H\\1"),
-         subjid = str_replace(subjid, "N100H(-\\d+)$", "N101H\\1"),
-         subjid = str_replace(subjid, "GN405(-\\d+)$", "G405H\\1"),
-         subjid = str_replace(subjid, "SL116(-\\d+)$", "S116H\\1"))
+  mutate(
+    subjid = str_replace(subjid, "S341H(-\\d+)$", "S314H\\1"),
+    subjid = str_replace(subjid, "N100H(-\\d+)$", "N101H\\1"),
+    subjid = str_replace(subjid, "GN405(-\\d+)$", "G405H\\1"),
+    subjid = str_replace(subjid, "SL116(-\\d+)$", "S116H\\1")
+  )
 
 write_csv(
   extract,

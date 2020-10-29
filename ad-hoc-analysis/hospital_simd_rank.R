@@ -194,7 +194,7 @@ data_clean %>%
 
 # Output only non-elective admission means at hospital level
 data_clean %>%
-  filter(non_elective) %>% 
+  filter(non_elective) %>%
   group_by(dag_id) %>%
   summarise(
     arith = mean(simd2020rank, na.rm = TRUE),
@@ -206,7 +206,7 @@ data_clean %>%
 
 # Output only non-elective admission means at hospital, age, sex level
 data_clean %>%
-  filter(non_elective) %>% 
+  filter(non_elective) %>%
   group_by(dag_id, age.factor, sex.factor) %>%
   summarise(
     arith = mean(simd2020rank, na.rm = TRUE),

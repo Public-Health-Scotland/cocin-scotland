@@ -47,7 +47,7 @@ topline <- scot_data %>%
     select(subjid, any_symptoms),
   by = "subjid"
   ) %>%
-  mutate(any_symptoms = recode(any_symptoms, .missing = "NO")) %>% 
+  mutate(any_symptoms = recode(any_symptoms, .missing = "NO")) %>%
   rename("Any Symptoms" = any_symptoms)
 
 
@@ -75,7 +75,7 @@ symp_data_levels_order <-
 
 # Quick Graph
 sympt_bar_chart <- symptom_data %>%
-  mutate(Symptom = factor(Symptom, symp_data_levels_order)) %>% 
+  mutate(Symptom = factor(Symptom, symp_data_levels_order)) %>%
   ggplot(aes(x = Symptom, y = n, fill = Status)) +
   geom_col(position = "fill") +
   theme_minimal() +

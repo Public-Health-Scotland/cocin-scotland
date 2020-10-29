@@ -5,7 +5,7 @@ source("extract-data/00_setup-environment.R")
 
 # Set correct filepath for server or desktop
 sicsag_file_path <- path(
- stats_server_path(),
+  stats_server_path(),
   "PHSCOVID19_Analysis", "RAPID Reporting", "Daily_extracts", "ICU Linkage files",
   "File for PHS.csv"
 )

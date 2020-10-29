@@ -18,7 +18,8 @@ sari_data <- data %>%
     who_sari_adapted = if_else(fever == 1 | cough == 1, TRUE, FALSE),
     imove_sari = if_else(
       (fever == 1 | malaise == 1 | headache == 1 | myalgia == 1 | confusion == 1 | dizzy == 1) &
-      (cough == 1 | sorethroat == 1 | sob == 1), TRUE, FALSE),
+        (cough == 1 | sorethroat == 1 | sob == 1), TRUE, FALSE
+    ),
     none = if_else(!who_sari & !who_sari_adapted & !imove_sari, TRUE, FALSE)
   ) %>%
   mutate(sari_def = case_when(
@@ -44,10 +45,12 @@ pct_sari_match <- sari_data %>%
   )
 
 sari_data %>%
-  select(admitdate, who_sari, who_sari_adapted, imove_sari, none) %>% 
-  pivot_longer(cols = -admitdate,
-               names_to = "sari_def") %>% 
-  filter(value == TRUE) %>% 
+  select(admitdate, who_sari, who_sari_adapted, imove_sari, none) %>%
+  pivot_longer(
+    cols = -admitdate,
+    names_to = "sari_def"
+  ) %>%
+  filter(value == TRUE) %>%
   ggplot(aes(x = admitdate, colour = sari_def)) +
   geom_freqpoly(binwidth = 7) +
   scale_colour_brewer("SARI definition", palette = "Paired ") +
@@ -56,9 +59,11 @@ sari_data %>%
 
 sari_data %>%
   select(who_sari, who_sari_adapted, imove_sari, none, abdopain:vomit, -cough, -fever) %>%
-  pivot_longer(cols = c(who_sari:none),
-               names_to = "sari_def") %>% 
-  filter(value == TRUE) %>% 
+  pivot_longer(
+    cols = c(who_sari:none),
+    names_to = "sari_def"
+  ) %>%
+  filter(value == TRUE) %>%
   pivot_longer(
     cols = c(abdopain:vomit),
     names_to = "symptom",

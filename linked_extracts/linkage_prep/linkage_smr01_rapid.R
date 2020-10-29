@@ -1,10 +1,10 @@
 source("extract-data/00_setup-environment.R")
 
 # Read in SMR01 extract
-SMR01 <- read_rds(path(here("data", str_glue("SMR01_extract.rds"))))
+smr01 <- read_rds(path(here("data", str_glue("SMR01_extract.rds"))))
 
 # Prepare data for matching
-SMR01 <- SMR01 %>%
+smr01 <- smr01 %>%
   rename(chi_number = upi_number) %>%
   mutate(
     admission_date = as_date(admission_date),
@@ -18,7 +18,7 @@ SMR01 <- SMR01 %>%
 
 # Match on to data
 data_smr01 <- rapid_data %>%
-  left_join(SMR01, by = "chi_number") %>%
+  left_join(smr01, by = "chi_number") %>%
   select(chi_number, adm_date, dis_date, smr01_dis) %>%
   filter(smr01_dis < adm_date) %>%
   filter(smr01_dis > (adm_date - years(1))) %>%
@@ -63,4 +63,4 @@ rapid_prevhosp <- rapid_data %>%
   select(chi_number, adm_date, prevhosp)
 
 # remove datasets no longer needed
-rm(SMR01, rapid, data_smr01, data_rapid)
+rm(smr01, rapid, data_smr01, data_rapid)

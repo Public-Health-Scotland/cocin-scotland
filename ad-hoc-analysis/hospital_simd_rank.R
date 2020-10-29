@@ -6,7 +6,7 @@ library(lubridate) # Working with dates
 library(tidyr) # Flip the pop data
 
 # Set up the SMRA connection
-SMRA_connection <- odbc::dbConnect(
+smra_conn <- odbc::dbConnect(
   drv = odbc::odbc(),
   dsn = "SMRA",
   uid = rstudioapi::showPrompt(title = "Username", message = "Username:"),
@@ -14,7 +14,7 @@ SMRA_connection <- odbc::dbConnect(
   encoding = "ASCII"
 )
 
-extract <- tbl(SMRA_connection, "SMR01_PI") %>%
+extract <- tbl(smra_conn, "SMR01_PI") %>%
   # Filter to the records we want
   filter(
     between(
@@ -138,20 +138,6 @@ data_clean <- data %>%
 # Add on SIMD ranks by datazone
 data_clean <- left_join(data_clean, simd_lookup, by = c("datazone_2011" = "data_zone"))
 
-# Superseded below
-# # Work out the arithmetic mean SIMD rank per hospital
-# data_clean %>%
-#   group_by(dag_id) %>%
-#   summarise(mean_simd = mean(simd2020rank, na.rm = TRUE)) %>%
-#   write_csv("hospital_simd_rank.csv")
-#
-# # Work out the arithmetic mean SIMD rank per hospital by age and sex
-# data_clean %>%
-#   group_by(dag_id, age.factor, sex.factor) %>%
-#   summarise(mean_simd = mean(simd2020rank, na.rm = TRUE)) %>%
-#   write_csv("hospital_simd_rank_age_sex.csv")
-
-
 # Add on the populations by datazone
 data_clean <- left_join(data_clean, pop_lookup %>%
   group_by(data_zone) %>%
@@ -166,7 +152,7 @@ data_clean <- left_join(data_clean, pop_lookup, by = c(
   "sex.factor"
 ))
 # Define a funtion for weighted geometric mean
-weighted.geomean <- function(x, w, ...) {
+weighted_geomean <- function(x, w, ...) {
   exp(weighted.mean(log(x), w, ...))
 }
 
@@ -177,7 +163,7 @@ data_clean %>%
     arith = mean(simd2020rank, na.rm = TRUE),
     geom = exp(mean(log(simd2020rank), na.rm = TRUE)),
     weighted_arith = weighted.mean(simd2020rank, pop_all, na.rm = TRUE),
-    weighted_geom = weighted.geomean(simd2020rank, pop_all, na.rm = TRUE)
+    weighted_geom = weighted_geomean(simd2020rank, pop_all, na.rm = TRUE)
   ) %>%
   write_csv("hospital_simd_rank.csv")
 
@@ -188,7 +174,7 @@ data_clean %>%
     arith = mean(simd2020rank, na.rm = TRUE),
     geom = exp(mean(log(simd2020rank), na.rm = TRUE)),
     weighted_arith = weighted.mean(simd2020rank, pop_all, na.rm = TRUE),
-    weighted_geom = weighted.geomean(simd2020rank, pop_all, na.rm = TRUE)
+    weighted_geom = weighted_geomean(simd2020rank, pop_all, na.rm = TRUE)
   ) %>%
   write_csv("hospital_simd_rank_age_sex.csv")
 
@@ -200,7 +186,7 @@ data_clean %>%
     arith = mean(simd2020rank, na.rm = TRUE),
     geom = exp(mean(log(simd2020rank), na.rm = TRUE)),
     weighted_arith = weighted.mean(simd2020rank, pop_all, na.rm = TRUE),
-    weighted_geom = weighted.geomean(simd2020rank, pop_all, na.rm = TRUE)
+    weighted_geom = weighted_geomean(simd2020rank, pop_all, na.rm = TRUE)
   ) %>%
   write_csv("hospital_simd_rank_non_el.csv")
 
@@ -212,6 +198,6 @@ data_clean %>%
     arith = mean(simd2020rank, na.rm = TRUE),
     geom = exp(mean(log(simd2020rank), na.rm = TRUE)),
     weighted_arith = weighted.mean(simd2020rank, pop_all, na.rm = TRUE),
-    weighted_geom = weighted.geomean(simd2020rank, pop_all, na.rm = TRUE)
+    weighted_geom = weighted_geomean(simd2020rank, pop_all, na.rm = TRUE)
   ) %>%
   write_csv("hospital_simd_rank_age_sex_non_el.csv")

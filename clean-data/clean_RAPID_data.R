@@ -265,7 +265,7 @@ chis <- df_mini$chi_number
 temporal_values <- df_mini$temporal_link_backward
 ep <- df_mini$epnum
 
-for (i in 1:length(chis)) {
+for (i in seq_len(length(chis))) {
   if (ep[i] == 1) {
     temporal_link_ids[i] <- 1
   } else {
@@ -506,7 +506,8 @@ covid_admissions %>%
     Totals = n()
   ) %>%
   bind_rows(mutate(., reason_2 = "Totals") %>%
-    group_by(reason_2) %>% summarise(across(everything(), sum)))
+    group_by(reason_2) %>%
+    summarise(across(everything(), sum)))
 
 reason_levels <- covid_admissions %>%
   count(reason) %>%

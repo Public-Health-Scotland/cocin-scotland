@@ -137,7 +137,7 @@ uoe_sympt_plot <- symptom_data %>%
   facet_grid(cols = vars(admission))
 
 # UoE corr plot
-symp.cors_before <- topline %>%
+symp_corr_before <- topline %>%
   filter(str_detect(admission, "Before")) %>%
   select(-subjid, -age, -cestdat, -admission) %>%
   mutate_all(as_factor) %>%
@@ -147,7 +147,7 @@ symp.cors_before <- topline %>%
   .[, colSums(is.na(.)) != nrow(.)] %>%
   .[rowSums(is.na(.)) != ncol(.), ]
 
-symp.cors_after <- topline %>%
+symp_corr_after <- topline %>%
   filter(str_detect(admission, "On")) %>%
   select(-subjid, -age, -cestdat, -admission) %>%
   mutate_all(as_factor) %>%
@@ -156,10 +156,10 @@ symp.cors_after <- topline %>%
   cor(use = "pairwise.complete.obs") %>%
   .[, colSums(is.na(.)) != nrow(.)] %>%
   .[rowSums(is.na(.)) != ncol(.), ]
-symp.cors_after[is.na(symp.cors_after)] <- 0
+symp_corr_after[is.na(symp_corr_after)] <- 0
 
 library(ggcorrplot)
-before_cor_plot <- symp.cors_before %>%
+before_cor_plot <- symp_corr_before %>%
   ggcorrplot(
     hc.order = TRUE,
     outline.color = "white",
@@ -167,7 +167,7 @@ before_cor_plot <- symp.cors_before %>%
   ) +
   ggtitle("Before 30th April")
 
-after_cor_plot <- symp.cors_after %>%
+after_cor_plot <- symp_corr_after %>%
   ggcorrplot(
     hc.order = TRUE,
     outline.color = "white",

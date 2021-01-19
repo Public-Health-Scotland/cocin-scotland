@@ -18,8 +18,13 @@ IMOVE_data_anon <- IMOVE_data_anon %>%
 # No IG for pseudonomised data so dropping anon_id
 IMOVE_data_anon <- IMOVE_data_anon %>%
   arrange(anon_id) %>%
-  mutate(row_num = row_number(), .before = everything()) %>%
+  # Taking out row number for anonymisation reasons
+#  mutate(row_num = row_number(), .before = everything()) %>%
   select(-anon_id)
+
+# Randomise rows for anonymisation reasons
+rows <- sample(nrow(imove))
+IMOVE_data_anon <- IMOVE_data_anon[rows, ]
 
 # Removing NA onsetdate
 # IMOVE_data_anon <- IMOVE_data_anon %>%

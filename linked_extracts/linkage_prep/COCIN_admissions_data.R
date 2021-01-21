@@ -180,7 +180,7 @@ underlyingcc <- cocin %>%
     liverdis = first(na.omit(modliv)),
     obese = first(na.omit(obesity_mhyn)),
     rendis = first(na.omit(renal_mhyn)),
-    rheumat = first(na.omit(rheumatologic_mhyn)))
+    rheumat = first(na.omit(rheumatologic_mhyn))
   )
 
 #########################################################

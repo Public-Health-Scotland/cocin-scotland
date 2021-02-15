@@ -30,7 +30,7 @@ IMOVE_data_anon <- IMOVE_data %>%
   select(-hosp_id2, -postcode)
 
 # Randomise rows for anonymisation reasons
-rows <- sample(nrow(imove))
+rows <- sample(nrow(IMOVE_data_anon))
 IMOVE_data_anon <- IMOVE_data_anon[rows, ]
 
 # Removing NA onsetdate

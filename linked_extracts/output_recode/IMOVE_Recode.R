@@ -805,11 +805,13 @@ outcomes <- data %>%
     #                             ifelse(discharge_type %in% c(12,13), 3, 8))),
     # outcome_pre = ifelse(is.na(outcome_pre), 8, outcome_pre),
     death_outcome = ifelse(!is.na(date_of_death) & date_of_death <= (dis_date + 1), 1, 0),
+    death_outcome = ifelse(is.na(death_outcome), 0, death_outcome),
     
     # outcome = ifelse(outcome_pre == 1 | death_outcome == 1, 1, outcome_pre),
     # outcome = ifelse(is.na(outcome), 8, outcome),
     
-    outcome = ifelse(death_outcome == 1, 1, 2),
+    outcome = ifelse(death_outcome == 1, 1, 
+                     ifelse(!is.na(dis_date), 2, 8)),
     outcome = ifelse(is.na(outcome), 8, outcome),
     
     deathdate = ifelse(outcome == "1", as.character(date_of_death), NA),
@@ -830,7 +832,6 @@ outcomes <- data %>%
          deathdate, healthcare_contact) %>%
   
   mutate_at(vars(-chi_number, -adm_date, -deathdate), list(factor))
-
 
 ####################################
 ###### LAB TESTS AND RESULTS #######

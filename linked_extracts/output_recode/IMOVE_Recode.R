@@ -356,8 +356,8 @@ symptoms <- data %>%
     dizzy = NA,
     
     # chest - only COCIN admissions
-    chest = ifelse(chest == "2", 0,
-                   ifelse(chest == "1", 1, 8)
+    chest = ifelse(chest == "NO", 0,
+                   ifelse(chest == "YES", 1, 8)
     ),
     chest = ifelse(is.na(chest), 8, chest),
     
@@ -705,8 +705,8 @@ conditions <- data %>%
     cancer = ifelse(is.na(cancer), 8, cancer),
     
     # hypert - only COCIN
-    hypert = ifelse(hypert == "NO", 0,
-                    ifelse(hypert == "YES", 1, 8)
+    hypert = ifelse(hypert == "2", 0,
+                    ifelse(hypert == "1", 1, 8)
     ),
     hypert = ifelse(is.na(hypert), 8, hypert),
     

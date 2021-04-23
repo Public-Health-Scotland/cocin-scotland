@@ -36,11 +36,13 @@ demographics <- data %>%
     # height - N/A
     height = NA,
     # weight - N/A
-    weight = NA
+    weight = NA,
+    # Add in a cocin marker to identify these records
+    cocin = if_else(is.na(subjid), 0, 1)
   ) %>%
   # select only required variables for this section
   select(chi_number, adm_date, idcountry, hosp_id2, consent, consent_sp, 
-         hospitalcode, age_y, age_m, sex, height, weight) %>%
+         hospitalcode, age_y, age_m, sex, height, weight, cocin) %>%
   mutate(sex = factor(sex))
 
 #################################
@@ -491,6 +493,12 @@ wp4_hosptest_mp <- data %>%
     urea_mp               = NA
   ) %>%
   
+  # Not sure how to treat most pathologic blood pressure variables so set as NA for now
+  mutate(
+    bpdia_mp = NA,
+    bpsys_mp = NA
+  ) %>%
+  
   # select only required variables for this section
   select(
     chi_number, adm_date, alp_mp, alt_mp, ast_mp, bloodurea_mp, bnp_mp, bpdia_mp, 
@@ -904,6 +912,10 @@ rm(
   contactinfo, conditions, outcomes, labtests
 )
 
+# Update discharge date as NA if patient has died in hospital
+IMOVE_data <- IMOVE_data %>%
+  mutate(dischargedate = if_else(outcome == 1, NA_Date_, dischargedate))
+
 # Assign each hospital code a generic number
 hospnums <- IMOVE_data %>%
   group_by(hospitalcode) %>%
@@ -922,7 +934,7 @@ hospnums <- IMOVE_data %>%
 IMOVE_data <- IMOVE_data %>%
   left_join(hospnums, by = "hospitalcode") %>%
   select(-hospitalcode) %>%
-  select(idcountry, hosp_id2, hospnum, everything())
+  select(idcountry, hosp_id2, hospnum, cocin, everything())
 
 # remove
 rm(hospnums)

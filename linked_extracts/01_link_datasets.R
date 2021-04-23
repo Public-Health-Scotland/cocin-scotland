@@ -29,6 +29,13 @@ source("linked_extracts/linkage_prep/linkage_nrs.R", echo = TRUE)
 data <- list(rapid_cocin, rapid_icu, rapid_prevhosp, rapid_deaths) %>%
   reduce(left_join, by = c("chi_number", "adm_date"))
 
+# Create nosocomial marker: If positive test was during stay and more than 14 days 
+# from admission date, set this as 1.
+data <- data %>%
+  mutate(days_test_from_admission = test_date - adm_date) %>%
+  mutate(nosocomial = if_else(result == 1 & days_test_from_admission > 14 &
+                                test_date <= dis_date, 1, 0))
+        
 # write dataset
 write_rds(data, path(here("output", str_glue("Linked_Dataset_{today()}.rds"))),
   compress = "gz"

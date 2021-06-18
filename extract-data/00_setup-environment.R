@@ -95,4 +95,9 @@ server_dir_final <- path(stats_server_path(), "PHSCOVID19_Analysis/Hospital_link
 dir_create(server_dir_final)
 
 
+server_dir_info <- path(stats_server_path(), "PHSCOVID19_Analysis/Hospital_linked_dataset/clean_data_info")
+dir_create(server_dir_info)
+
+
+
 ### END OF SCRIPT ###

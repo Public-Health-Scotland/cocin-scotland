@@ -2,8 +2,8 @@ source("extract-data/00_setup-environment.R")
 
 # Read in SICSAG extract: the sicsag linkage files have been deleted. Until issue is resolved
 # with SICSAG team/permissions, use the latest data we have up until 14th June
-#sicsag_extract <- read_rds(path(server_dir, str_glue("{today()}_SICSAG_extract.rds")))
-sicsag_extract <- read_rds(path(server_dir, str_glue("2021-06-14_SICSAG_extract.rds")))
+sicsag_extract <- read_rds(path(server_dir, str_glue("{today()}_SICSAG_extract.rds")))
+#sicsag_extract <- read_rds(path(server_dir, str_glue("2021-06-14_SICSAG_extract.rds")))
 
 # Prepare data for matching - create ICU 'stays'
 icu <- sicsag_extract %>%

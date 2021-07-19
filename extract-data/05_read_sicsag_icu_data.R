@@ -2,16 +2,18 @@
 
 source("extract-data/00_setup-environment.R")
 
+library(haven)
+
 
 # Set correct filepath for server or desktop
 sicsag_file_path <- path(
   stats_server_path(),
-  "PHSCOVID19_Analysis", "RAPID Reporting", "Daily_extracts", "ICU Linkage files",
-  "File for PHS.csv"
+  "PHSCOVID19_Analysis", "Hospital_linked_dataset", "SICSAG File", 
+  "SICSAG data approved for SARI.sav"
 )
 
 # Read in data
-sicsag_data <- read_csv(sicsag_file_path)
+sicsag_data <- read_sav(sicsag_file_path)
 # quick check for file error
 if (ncol(sicsag_data) == 1) stop("Probable error with sicsag file (try swapping between read_csv and read_tsv")
 

@@ -41,9 +41,9 @@ rapid <- read_rds(here("data", "rapid_ecoss_joined.rds")) %>%
     admission_date,
     discharge_date,
     hospital_of_treatment_code,
-    ecossid,
-    forename,
-    surname,
+#    ecossid,
+#    forename,
+#    surname,
     specimen_date,
     result,
     keyemployer
@@ -119,10 +119,10 @@ rapid_stay_level <- rapid %>%
     diag_5 = first(na.omit(diagnosis_5_code_4_char)),
     diag_6 = first(na.omit(diagnosis_6_code_4_char)),
     result = first(result), # Result is the result of the PCR test from ECOSS
-    ecossid = first(ecossid),
-    test_date = first(specimen_date),
-    forename = first(forename),
-    surname = first(surname)
+#    ecossid = first(ecossid),
+    test_date = first(specimen_date)
+#    forename = first(forename),
+#    surname = first(surname)
   ) %>%
   ungroup() %>%
   # If we can calculate the age from the RAPID dob and adm_date
@@ -185,10 +185,10 @@ cocin_matched <- rapid_stay_level %>%
     diag_5 = first(na.omit(diag_5)),
     diag_6 = first(na.omit(diag_6)),
     result = first(result), # Result is the result of the PCR test from ECOSS
-    ecossid = first(ecossid),
+#    ecossid = first(ecossid),
     test_date = first(test_date),
-    forename = first(forename),
-    surname = first(surname),
+#    forename = first(forename),
+#    surname = first(surname),
     los = sum(los)
   ) %>%
   ungroup() %>%
@@ -311,10 +311,10 @@ coded_as_covid <- coded_as_covid %>%
     diag_5 = first(na.omit(diag_5)),
     diag_6 = first(na.omit(diag_6)),
     result = first(result), # Result is the result of the PCR test from ECOSS
-    ecossid = first(ecossid),
+#    ecossid = first(ecossid),
     test_date = first(test_date),
-    forename = first(forename),
-    surname = first(surname),
+#    forename = first(forename),
+#    surname = first(surname),
     los = sum(los)
   ) %>%
   # Clean up any los where this is longer than possible (caused by overlapping dates)
@@ -379,10 +379,10 @@ test_in_stay <- rapid_cocin_filtered %>%
     diag_5 = first(na.omit(diag_5)),
     diag_6 = first(na.omit(diag_6)),
     result = first(result), # Result is the result of the PCR test from ECOSS
-    ecossid = first(ecossid),
+#    ecossid = first(ecossid),
     test_date = first(test_date),
-    forename = first(forename),
-    surname = first(surname),
+#    forename = first(forename),
+#    surname = first(surname),
     los = sum(los)
   ) %>%
   ungroup() %>%
@@ -431,10 +431,10 @@ test_before_stay <- rapid_cocin_filtered %>%
     diag_5 = first(na.omit(diag_5)),
     diag_6 = first(na.omit(diag_6)),
     result = first(result), # Result is the result of the PCR test from ECOSS
-    ecossid = first(ecossid),
+#    ecossid = first(ecossid),
     test_date = first(test_date),
-    forename = first(forename),
-    surname = first(surname),
+#    forename = first(forename),
+#    surname = first(surname),
     los = sum(los)
   ) %>%
   ungroup() %>%

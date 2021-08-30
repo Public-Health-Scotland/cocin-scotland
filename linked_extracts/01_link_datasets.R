@@ -1,3 +1,5 @@
+# THIS IS AN EXAMPLE
+
 source("extract-data/00_setup-environment.R")
 
 # Read in RAPID data
